@@ -1,5 +1,7 @@
 # stl-scraper - Short-Term Listings Scraper
 
+Scrape short-term listings providers (currently just Airbnb)
+
 ## Requirements
 
 - Python 3.10+
