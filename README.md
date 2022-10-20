@@ -1,11 +1,23 @@
 # stl-scraper - Short-Term Listings Scraper
 
-Scrape short-term listings providers (currently just Airbnb)
+Scrape short-term listings providers (currently just Airbnb).
+
+Given a search query, e.g. "San Diego, CA" or "Rome, Italy", search Airbnb inventory and collect data on listings. Save results to a CSV file.
+
+## Usage
+
+```shell
+# activate the virtual env
+. env/bin/activate
+
+# run the script
+./stl.py "Madrid, Spain"
+```
 
 ## Requirements
 
-- Python 3.10+
-- Linux
+- BSD | Linux | WSL
+- Python >= 3.10
 
 ## Installation
 
@@ -23,14 +35,4 @@ python3 -m venv env
 
 # install dependencies in virtual env
 pip install -r requirements.txt
-```
-
-## Usage
-
-```shell
-# activate the virtual env
-. env/bin/activate
-
-# run the script
-./stl.py "Madrid, Spain"
 ```
