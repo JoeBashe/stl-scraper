@@ -1,7 +1,7 @@
 import json
 import requests
 
-from Stl.Endpoint.BaseEndpoint import BaseEndpoint
+from stl.endpoint.BaseEndpoint import BaseEndpoint
 
 
 class Reviews(BaseEndpoint):

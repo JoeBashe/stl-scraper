@@ -3,7 +3,7 @@ from datetime import datetime
 import lxml.html
 import re
 
-from Stl.Endpoint.BaseEndpoint import BaseEndpoint
+from stl.endpoint.BaseEndpoint import BaseEndpoint
 
 
 class Pdp(BaseEndpoint):

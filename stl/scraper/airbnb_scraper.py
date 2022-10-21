@@ -3,10 +3,10 @@ import json
 from logging import Logger
 from urllib.parse import urlparse, parse_qs
 
-from Stl.Endpoint.Explore import Explore
-from Stl.Endpoint.Pdp import Pdp
-from Stl.Endpoint.Reviews import Reviews
-from Stl.Persistence.PersistenceInterface import PersistenceInterface
+from stl.endpoint.Explore import Explore
+from stl.endpoint.Pdp import Pdp
+from stl.endpoint.Reviews import Reviews
+from stl.persistence.PersistenceInterface import PersistenceInterface
 
 
 class AirbnbScraper:
