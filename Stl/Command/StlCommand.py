@@ -50,9 +50,11 @@ Arguments:
         # load persistence layer
         storage_type = config['main']['storage_type']
         if storage_type == 'elasticsearch':
+            es_cfg = config['elasticsearch']
             persistence = Elastic(
-                Elasticsearch(hosts=config['elasticsearch']['hosts']),
+                Elasticsearch(hosts=es_cfg['hosts'], basic_auth=(es_cfg['username'], es_cfg['password'])),
                 config['elasticsearch']['index'])
+            persistence.create_index_if_not_exists(config['elasticsearch']['index'])
         else:
             persistence = Csv(project_path)
 
