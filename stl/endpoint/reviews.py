@@ -25,7 +25,9 @@ class Reviews(BaseEndpoint):
         response = requests.get(url, headers=headers)
         data = json.loads(response.text)
         pdp_reviews = data['data']['merlin']['pdpReviews']
-        n_reviews_total = int(pdp_reviews['metadata'].get('reviewsCount', len(pdp_reviews['reviews'])))
+        n_reviews_total = \
+            int(pdp_reviews['metadata']['reviewsCount']) if pdp_reviews['metadata'] else len(pdp_reviews['reviews'])
+
         reviews = [{
             'comments':   r['comments'],
             'created_at': r['createdAt'],
