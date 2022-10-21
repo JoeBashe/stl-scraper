@@ -2,7 +2,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elasticsearch.exceptions import RequestError
 
-from stl.persistence.PersistenceInterface import PersistenceInterface
+from stl.persistence.persistence_interface import PersistenceInterface
 
 
 class Elastic(PersistenceInterface):

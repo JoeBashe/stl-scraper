@@ -5,12 +5,12 @@ import sys
 from configparser import ConfigParser
 from elasticsearch import Elasticsearch
 
-from stl.endpoint.Explore import Explore
-from stl.endpoint.Pdp import Pdp
-from stl.endpoint.Reviews import Reviews
-from stl.persistence.Csv import Csv
-from stl.persistence.Elastic import Elastic
-from stl.scraper.AirbnbScraper import AirbnbScraper
+from stl.endpoint.explore import Explore
+from stl.endpoint.pdp import Pdp
+from stl.endpoint.reviews import Reviews
+from stl.persistence.csv import Csv
+from stl.persistence.elastic import Elastic
+from stl.scraper.airbnb_scraper import AirbnbScraper
 
 
 class StlCommand:

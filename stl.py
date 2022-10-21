@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from docopt import docopt, DocoptExit
 
-from stl.command.StlCommand import StlCommand
+from stl.command.stl_command import StlCommand
 
 
 def main():
