@@ -217,8 +217,9 @@ class Pdp(BaseEndpoint):
 
         self.__get_detail_property(
             item, 'transit', 'Getting around', section_data['location'].get('seeAllLocationDetails'), 'content')
-        self.__get_detail_property(
-            item, 'interaction', 'During your stay', section_data['host_profile'].get('hostInfos'), 'html')
+        if section_data.get('host_profile'):
+            self.__get_detail_property(
+                item, 'interaction', 'During your stay', section_data['host_profile'].get('hostInfos'), 'html')
 
         return item
 
