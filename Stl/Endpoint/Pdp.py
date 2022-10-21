@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import lxml.html
 import re
 
@@ -11,17 +13,15 @@ class Pdp(BaseEndpoint):
         super().__init__(api_key, currency)
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
-    def get_listing(self, listing_id: str, data_cache: dict, geography: dict, reviews: dict):
+    def get_listing(self, listing_id: str, data_cache: dict, geography: dict, reviews: dict) -> dict:
         url = self.__get_url(listing_id)
         response = self._api_request(url)
-        return self.__parse_listing_contents(response, data_cache[listing_id], geography, reviews)
+        return self.__parse_listing_contents(response, data_cache[listing_id], geography, reviews) | {
+            'updated_at': datetime.now(),
+        }
 
     def collect_listings_from_sections(self, data: dict, data_cache: dict):
-        """Get listings from "sections" (i.e. search results page sections).
-
-         Also collect some data and save it for later. Double check prices are correct, because Airbnb switches to daily
-         pricing if less than 28 days are selected (e.g. during a range search).
-        """
+        """Get listings from "sections" (i.e. search results page sections)."""
         sections = data['data']['dora']['exploreV3']['sections']
         listing_ids = []
         for section in [s for s in sections if s['sectionComponentType'] == 'listings_ListingsGrid_Explore']:
@@ -170,6 +170,7 @@ class Pdp(BaseEndpoint):
             beds=listing_data_cached['beds'],
             business_travel_ready=listing_data_cached['business_travel_ready'],
             city=listing_data_cached.get('city', geography['city']),
+            coordinates={'lon': listing_data_cached['longitude'], 'lat': listing_data_cached['latitude']},
             country=geography['country'],
             description=self.__html_to_text(
                 section_data['description']['htmlDescription']['htmlText']
