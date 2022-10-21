@@ -17,7 +17,7 @@ class Pdp(BaseEndpoint):
         url = self.__get_url(listing_id)
         response = self._api_request(url)
         return self.__parse_listing_contents(response, data_cache[listing_id], geography, reviews) | {
-            'updated_at': datetime.now(),
+            'updated_at': datetime.utcnow(),
         }
 
     def collect_listings_from_sections(self, data: dict, data_cache: dict):
