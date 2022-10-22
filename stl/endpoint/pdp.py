@@ -169,6 +169,7 @@ class Pdp(BaseEndpoint):
             bedrooms=listing_data_cached['bedrooms'],
             beds=listing_data_cached['beds'],
             business_travel_ready=listing_data_cached['business_travel_ready'],
+            can_instant_book=metadata['bookingPrefetchData']['canInstantBook'],
             city=listing_data_cached.get('city', geography['city']),
             coordinates={'lon': listing_data_cached['longitude'], 'lat': listing_data_cached['latitude']},
             country=geography['country'],
