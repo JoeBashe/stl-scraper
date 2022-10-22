@@ -21,7 +21,6 @@ class Explore(BaseEndpoint):
                     'source':                'structured_search_input_header',
                     'searchType':            'filter_change',
                     'query':                 search_string,
-                    # 'roomTypes':             self.__room_types,
                     'cdnCacheSafe':          False,
                     'simpleSearchTreatment': 'simple_search_only',
                     'treatmentFlags':        [
