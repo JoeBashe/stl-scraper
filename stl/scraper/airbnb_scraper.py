@@ -19,9 +19,8 @@ class AirbnbScraper:
         self.__persistence = persistence
         self.__reviews = reviews
 
-    def run(self, query: str):
+    def run(self, query: str, params: dict):
         listings = []
-        params = {}
         url = self.__explore.get_url(query, params)
         data, pagination = self.__explore.search(url)
         self.__geography.update(data['data']['dora']['exploreV3']['metadata']['geography'])

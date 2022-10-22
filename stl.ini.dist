@@ -1,5 +1,9 @@
-[main]
-storage_type = csv
+[search]
+roomTypes =
+
+[storage]
+; csv or elasticsearch
+type = csv
 
 [airbnb]
 api_key = d306zoyjsyarp7ifhu67rjxn52tv0t20
