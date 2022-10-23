@@ -11,7 +11,9 @@ class BaseEndpoint(ABC):
         self._currency = currency
         self._locale = locale
 
-    def _api_request(self, url: str) -> dict:
+    def _api_request(self, url: str, method: str = 'GET', data=None) -> dict:
+        if data is None:
+            data = {}
         headers = {'x-airbnb-api-key': self._api_key}
         response = requests.request(method, url, headers=headers, data=data)
         return response.json()
