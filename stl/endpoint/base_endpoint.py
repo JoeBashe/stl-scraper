@@ -6,13 +6,14 @@ from urllib.parse import urlunparse, urlencode
 
 
 class BaseEndpoint(ABC):
-    def __init__(self, api_key: str, currency: str):
+    def __init__(self, api_key: str, currency: str, locale: str = 'en'):
         self._api_key = api_key
         self._currency = currency
+        self._locale = locale
 
     def _api_request(self, url: str) -> dict:
         headers = {'x-airbnb-api-key': self._api_key}
-        response = requests.request('GET', url, headers=headers, data={})
+        response = requests.request(method, url, headers=headers, data=data)
         return response.json()
 
     @staticmethod
