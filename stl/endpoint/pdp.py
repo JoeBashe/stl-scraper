@@ -14,11 +14,14 @@ class Pdp(BaseEndpoint):
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
     def get_listing(self, listing_id: str, data_cache: dict, geography: dict, reviews: dict) -> dict:
-        url = self.__get_url(listing_id)
-        response = self._api_request(url)
+        response = self.get_raw_listing(listing_id)
         return self.__parse_listing_contents(response, data_cache[listing_id], geography, reviews) | {
             'updated_at': datetime.utcnow(),
         }
+
+    def get_raw_listing(self, listing_id: str) -> dict:
+        url = self.__get_url(listing_id)
+        return self._api_request(url)
 
     def collect_listings_from_sections(self, data: dict, data_cache: dict):
         """Get listings from "sections" (i.e. search results page sections)."""
