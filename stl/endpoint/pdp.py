@@ -76,7 +76,7 @@ class Pdp(BaseEndpoint):
         _api_path = '/api/v3/PdpPlatformSections'
         query = {
             'operationName': 'PdpPlatformSections',
-            'locale':        'en',
+            'locale':        self._locale,
             'currency':      self._currency
         }
         data = {

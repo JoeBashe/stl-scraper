@@ -42,7 +42,7 @@ class Reviews(BaseEndpoint):
         _api_path = '/api/v3/PdpReviews'
         query = {
             'operationName': 'PdpReviews',
-            'locale':        'en',
+            'locale':        self._locale,
             'currency':      self._currency,
             'variables':     {
                 'request': {

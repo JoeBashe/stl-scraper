@@ -6,7 +6,7 @@ class Explore(BaseEndpoint):
         _api_path = '/api/v3/ExploreSearch'
         query = {
             'operationName': 'ExploreSearch',
-            'locale':        'en',
+            'locale':        self._locale,
             'currency':      self._currency,
             '_cb':           'ld7rar1fhh6if',
         }
