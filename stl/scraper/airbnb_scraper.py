@@ -84,7 +84,6 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
 
 
 class AirbnbCalendarScraper(AirbnbScraperInterface):
-
     def __init__(
             self, calendar: Calendar, pricing: StartStaysCheckout, persistence: PersistenceInterface, logger: Logger):
         self.__logger = logger
