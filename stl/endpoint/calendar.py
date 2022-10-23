@@ -53,7 +53,7 @@ class Calendar(BaseEndpoint):
 
 
 class StartStaysCheckout(BaseEndpoint):
-    def get_rates(self, listing_id: str, start_date: str, end_date: str):
+    def get_rates(self, product_id: str, start_date: str, end_date: str):
         _api_path = '/api/v3/startStaysCheckout'
         url = self.build_airbnb_url(_api_path, {
             'operationName': 'startStaysCheckout',
@@ -83,7 +83,7 @@ class StartStaysCheckout(BaseEndpoint):
                         ]
                     },
                     'org':                   {},
-                    'productId':             'U3RheUxpc3Rpbmc6NTA2MTc5NDQ=',
+                    'productId':             product_id,
                     'china':                 {},
                     'quickPayData':          None
                 }
