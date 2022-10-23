@@ -3,13 +3,19 @@ import json
 from logging import Logger
 from urllib.parse import urlparse, parse_qs
 
+from stl.endpoint.calendar import Calendar, StartStaysCheckout
 from stl.endpoint.explore import Explore
 from stl.endpoint.pdp import Pdp
 from stl.endpoint.reviews import Reviews
 from stl.persistence.persistence_interface import PersistenceInterface
 
 
-class AirbnbScraper:
+class AirbnbScraperInterface:
+    def run(self, *args, **kwargs):
+        raise NotImplementedError()
+
+
+class AirbnbSearchScraper(AirbnbScraperInterface):
     def __init__(self, explore: Explore, pdp: Pdp, reviews: Reviews, persistence: PersistenceInterface, logger: Logger):
         self.__logger = logger
         self.__explore = explore
@@ -75,3 +81,19 @@ class AirbnbScraper:
 
         if 'sw_lng' in parsed_qs:
             params['sw_lng'] = parsed_qs['sw_lng'][0]
+
+
+class AirbnbCalendarScraper(AirbnbScraperInterface):
+
+    def __init__(
+            self, calendar: Calendar, pricing: StartStaysCheckout, persistence: PersistenceInterface, logger: Logger):
+        self.__logger = logger
+        self.__calendar = calendar
+        self.__persistence = persistence
+        self.__pricing = pricing
+
+    def run(self, source: str):
+        if source == 'elasticsearch':
+            pass
+        else:  # assume listing id
+            self.__calendar.get_calendar(listing_id=source)
