@@ -55,13 +55,7 @@ Arguments:
             pdp = Pdp(api_key, currency)
             print(pdp.get_raw_listing(args.get('<listingId>')))
         elif args.get('pricing'):
-            api_key = config['airbnb']['api_key']
-            currency = args.get('--currency', 'USD')
-            pricing = StartStaysCheckout(api_key, currency)
-            rates = pricing.get_rates(args.get('<listingId>'), args.get('<checkin>'), args.get('<checkout>'))
-            sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
-            quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
-            print(rates)
+            StlCommand.__get_pricing(args, config)
         else:
             raise RuntimeError('ERROR: Unexpected command:\n{}'.format(*args))
 
@@ -124,3 +118,19 @@ Arguments:
         """Get CLI comma-separated list argument, fall back to config."""
         return list(filter(bool, map(
             str.strip, str(args.get('--{}'.format(arg_name), config['search'].get(arg_name, ''))).split(','))))
+
+    @staticmethod
+    def __get_pricing(args, config):
+        listing_id = args.get('<listingId>')
+        checkin = args.get('<checkin>')
+        checkout = args.get('<checkout>')
+        product_id = Pdp.get_product_id(listing_id)
+        api_key = config['airbnb']['api_key']
+        currency = args.get('--currency', 'USD')
+        pricing = StartStaysCheckout(api_key, currency)
+        rates = pricing.get_rates(product_id, checkin, args.get('<checkout>'))
+        sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
+        quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
+        price_breakdown = quickpay_data['productPriceBreakdown']['priceBreakdown']
+        total = price_breakdown['total']['total']['amountMicros'] / 1000000
+        print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
