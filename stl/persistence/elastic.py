@@ -1,5 +1,5 @@
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, scan
 from elasticsearch.exceptions import RequestError
 
 from stl.persistence.persistence_interface import PersistenceInterface
@@ -78,6 +78,18 @@ class Elastic(PersistenceInterface):
         except RequestError as re:
             if re.error != 'resource_already_exists_exception':
                 raise
+
+    def delete(self, listing_id: str):
+        self.__es.delete(index=self.__index, id=listing_id)
+
+    def get_all_index_ids(self):
+        hits = scan(
+            self.__es,
+            query={"query": {"match_all": {}}},
+            scroll='1m',
+            index=self.__index
+        )
+        return (hit['_id'] for hit in hits)
 
     def save(self, query: str, listings: list):
         bulk(self.__es, index=self.__index, actions=[{
