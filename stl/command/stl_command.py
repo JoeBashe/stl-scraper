@@ -6,7 +6,7 @@ import sys
 from configparser import ConfigParser
 from elasticsearch import Elasticsearch
 
-from stl.endpoint.calendar import Calendar, StartStaysCheckout
+from stl.endpoint.calendar import Calendar, Pricing
 from stl.endpoint.explore import Explore
 from stl.endpoint.pdp import Pdp
 from stl.endpoint.reviews import Reviews
@@ -52,7 +52,12 @@ Arguments:
             pdp = Pdp(api_key, currency)
             print(pdp.get_raw_listing(args.get('<listingId>')))
         elif args.get('pricing'):
-            StlCommand.__get_pricing(args, config)
+            listing_id = args.get('<listingId>')
+            checkin = args.get('<checkin>')
+            checkout = args.get('<checkout>')
+            pricing = Pricing(config['airbnb']['api_key'], currency)
+            total = pricing.get_pricing(checkin, config, listing_id)
+            print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
         else:
             raise RuntimeError('ERROR: Unexpected command:\n{}'.format(*args))
 
@@ -95,17 +100,18 @@ Arguments:
 
         # create scraper
         api_key = config['airbnb']['api_key']
-        currency = args.get('--currency', 'USD')
         logger = logging.getLogger(__class__.__module__.lower())
         if scraper_type == 'search':
             explore = Explore(api_key, currency)
             pdp = Pdp(api_key, currency)
             reviews = Reviews(api_key, currency)
             return AirbnbSearchScraper(explore, pdp, reviews, persistence, logger)
-        else:  # assume 'calendar'
+        elif scraper_type == 'calendar':
             calendar = Calendar(api_key, currency)
-            pricing = StartStaysCheckout(api_key, currency)
+            pricing = Pricing(api_key, currency)
             return AirbnbCalendarScraper(calendar, pricing, persistence, logger)
+        else:
+            raise RuntimeError('Unknown scraper type: %s' % scraper_type)
 
     @staticmethod
     def __get_search_params(args, config):
@@ -121,19 +127,3 @@ Arguments:
         """Get CLI comma-separated list argument, fall back to config."""
         return list(filter(bool, map(
             str.strip, str(args.get('--{}'.format(arg_name), config['search'].get(arg_name, ''))).split(','))))
-
-    @staticmethod
-    def __get_pricing(args, config):
-        listing_id = args.get('<listingId>')
-        checkin = args.get('<checkin>')
-        checkout = args.get('<checkout>')
-        product_id = Pdp.get_product_id(listing_id)
-        api_key = config['airbnb']['api_key']
-        currency = args.get('--currency', 'USD')
-        pricing = StartStaysCheckout(api_key, currency)
-        rates = pricing.get_rates(product_id, checkin, args.get('<checkout>'))
-        sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
-        quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
-        price_breakdown = quickpay_data['productPriceBreakdown']['priceBreakdown']
-        total = price_breakdown['total']['total']['amountMicros'] / 1000000
-        print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))

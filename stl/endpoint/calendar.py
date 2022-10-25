@@ -52,7 +52,20 @@ class Calendar(BaseEndpoint):
                     continue  # skip dates in the past
 
 
-class StartStaysCheckout(BaseEndpoint):
+
+class Pricing(BaseEndpoint):
+
+    def get_pricing(self, checkin: str, checkout: str, listing_id: str):
+        """Get total price for a listing for specific dates."""
+        product_id = Pdp.get_product_id(listing_id)
+        rates = self.get_rates(product_id, checkin, checkout)
+        sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
+        quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
+        price_breakdown = quickpay_data['productPriceBreakdown']['priceBreakdown']
+        total = price_breakdown['total']['total']['amountMicros'] / 1000000
+
+        return total
+
     def get_rates(self, product_id: str, start_date: str, end_date: str):
         _api_path = '/api/v3/startStaysCheckout'
         url = self.build_airbnb_url(_api_path, {

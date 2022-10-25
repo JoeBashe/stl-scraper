@@ -3,7 +3,8 @@ import json
 from logging import Logger
 from urllib.parse import urlparse, parse_qs
 
-from stl.endpoint.calendar import Calendar, StartStaysCheckout
+from stl.endpoint.base_endpoint import BaseEndpoint
+from stl.endpoint.calendar import Calendar, Pricing
 from stl.endpoint.explore import Explore
 from stl.endpoint.pdp import Pdp
 from stl.endpoint.reviews import Reviews
@@ -85,9 +86,9 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
 
 class AirbnbCalendarScraper(AirbnbScraperInterface):
     def __init__(
-            self, calendar: Calendar, pricing: StartStaysCheckout, persistence: PersistenceInterface, logger: Logger):
-        self.__logger = logger
+            self, calendar: Calendar, pricing: Pricing, persistence: PersistenceInterface, logger: Logger):
         self.__calendar = calendar
+        self.__logger = logger
         self.__persistence = persistence
         self.__pricing = pricing
 
