@@ -29,29 +29,26 @@ Arguments:
     <currency>  - USD (default), EUR, etc.
     <listingId> - The Listing ID
     <roomTypes> - e.g. "Entire home/apt". Can include multiple separated by comma.
-    <source>    - One of either: a) Listing ID; or b) the special keyword "elasticsearch".
+    <source>    - One of either: a. Listing ID; or b. the special keyword "elasticsearch".
 """
 
     @staticmethod
-    def execute(args):
+    def execute(args: dict):
         # get config
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
         config = StlCommand.__config(project_path)
+        currency = args.get('--currency') or 'USD'
         if args.get('search'):
-            # create scraper
-            scraper = StlCommand.__create_scraper('search', args, config, project_path)
-            params = StlCommand.__get_search_params(args, config)
             query = args['<query>']
-            # run scraper
+            scraper = StlCommand.__create_scraper('search', currency, config, project_path, query)
+            params = StlCommand.__get_search_params(args, config)
             scraper.run(query, params)
         elif args.get('calendar'):
-            # create scraper
-            scraper = StlCommand.__create_scraper('calendar', args, config, project_path)
+            scraper = StlCommand.__create_scraper('calendar', currency, config, project_path)
             source = args['<source>']
             scraper.run(source)
         elif args.get('data'):
             api_key = config['airbnb']['api_key']
-            currency = args.get('--currency', 'USD')
             pdp = Pdp(api_key, currency)
             print(pdp.get_raw_listing(args.get('<listingId>')))
         elif args.get('pricing'):
@@ -77,7 +74,12 @@ Arguments:
 
     @staticmethod
     def __create_scraper(
-            scraper_type: str, args: dict, config: ConfigParser, project_path: str) -> AirbnbScraperInterface:
+            scraper_type: str,
+            config: ConfigParser,
+            project_path: str,
+            currency: str,
+            query: str = None
+    ) -> AirbnbScraperInterface:
         # config persistence layer
         storage_type = config['storage']['type']
         if storage_type == 'elasticsearch':
@@ -88,7 +90,8 @@ Arguments:
             )
             persistence.create_index_if_not_exists(config['elasticsearch']['index'])
         else:
-            persistence = Csv(project_path)
+            csv_path = os.path.join(project_path, '{}.csv'.format(query))
+            persistence = Csv(csv_path)
 
         # create scraper
         api_key = config['airbnb']['api_key']
