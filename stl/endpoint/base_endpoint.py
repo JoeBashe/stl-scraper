@@ -4,6 +4,8 @@ import requests
 from abc import ABC
 from urllib.parse import urlunparse, urlencode
 
+from stl.exception.api import ApiException, ForbiddenException
+
 
 class BaseEndpoint(ABC):
     def __init__(self, api_key: str, currency: str, locale: str = 'en'):
@@ -14,9 +16,16 @@ class BaseEndpoint(ABC):
     def _api_request(self, url: str, method: str = 'GET', data=None) -> dict:
         if data is None:
             data = {}
+
         headers = {'x-airbnb-api-key': self._api_key}
         response = requests.request(method, url, headers=headers, data=data)
-        return response.json()
+        response_json = response.json()
+
+        errors = response_json.get('errors')
+        if errors:
+            self.__handle_api_error(errors)
+
+        return response_json
 
     @staticmethod
     def build_airbnb_url(path: str, query=None):
@@ -30,3 +39,15 @@ class BaseEndpoint(ABC):
         """Property format JSON strings for 'variables' & 'extensions' params."""
         query['variables'] = json.dumps(query['variables'], separators=(',', ':'))
         query['extensions'] = json.dumps(query['extensions'], separators=(',', ':'))
+
+    @staticmethod
+    def __handle_api_error(errors):
+        assert isinstance(errors, list)
+        error = errors.pop()
+        if (isinstance(error, dict)
+                and error.get('extensions')
+                and error['extensions'].get('response')
+                and error['extensions']['response'].get('statusCode') == 403):
+            raise ForbiddenException(errors)
+        else:
+            raise ApiException(errors)
