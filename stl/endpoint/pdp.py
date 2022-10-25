@@ -70,8 +70,9 @@ class Pdp(BaseEndpoint):
         super().__init__(api_key, currency)
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
-    def get_product_id(self, listing_id: str) -> str:
-        url = self.build_airbnb_url('/rooms/{}'.format(listing_id))
+    @staticmethod
+    def get_product_id(listing_id: str) -> str:
+        url = BaseEndpoint.build_airbnb_url('/rooms/{}'.format(listing_id))
         response = requests.get(url)
         doc = lxml.html.fromstring(response.text)
         data_state = json.loads(doc.xpath('//script[@id="data-state"]')[0].text)
