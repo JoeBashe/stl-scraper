@@ -12,27 +12,54 @@ class Pricing(BaseEndpoint):
 
     def get_pricing(self, checkin: str, checkout: str, listing_id: str):
         """Get total price for a listing for specific dates."""
+        # Get raw price data
         product_id = Pdp.get_product_id(listing_id)
         rates = self.get_rates(product_id, checkin, checkout)
         sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
         quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
         price_breakdown = quickpay_data['productPriceBreakdown']['priceBreakdown']
-
-        item_accommodation = [i for i in price_breakdown['priceItems'] if i['type'] == 'ACCOMMODATION'].pop()
-        item_cleaning_fee = [i for i in price_breakdown['priceItems'] if i['type'] == 'CLEANING_FEE'].pop()
-        item_discount = [i for i in price_breakdown['priceItems'] if i['type'] == 'DISCOUNT'].pop()
-        item_taxes = [i for i in price_breakdown['priceItems'] if i['type'] == 'TAXES'].pop()
+        price_items = price_breakdown['priceItems']
         nights = (datetime.strptime(checkout, '%Y-%m-%d') - datetime.strptime(checkin, '%Y-%m-%d')).days
 
-        return {
+        if len(price_items) > 4:
+            raise ValueError('Unexpected extra section types')
+
+        # Parse price line items
+        items = {}
+        for type_name in ['ACCOMMODATION', 'CLEANING_FEE', 'DISCOUNT', 'TAXES']:
+            type_items = [i for i in price_items if i['type'] == type_name]
+            if not type_items:
+                if type_name != 'DISCOUNT':
+                    raise ValueError('Unexpected missing section type: %s' % type_name)
+                continue  # Missing discount is ok
+            if len(type_items) > 1:
+                raise ValueError('Unexpected multiple section type: %s' % type_name)
+            items[type_name] = type_items.pop()
+
+        # Create normalized pricing object
+        price_accommodation = items['ACCOMMODATION']['total']['amountMicros'] / 1000000
+        pricing = {
             'nights':              nights,
-            'price_nightly':       item_accommodation['total']['amountMicros'] / (1000000 * nights),
-            'price_accommodation': item_accommodation['total']['amountMicros'] / 1000000,
-            'discount':            item_cleaning_fee['total']['amountMicros'] / 1000000,
-            'price_cleaning':      item_discount['total']['amountMicros'] / 1000000,
-            'taxes':               item_taxes['total']['amountMicros'] / 1000000,
+            'price_nightly':       price_accommodation / nights,
+            'price_accommodation': price_accommodation,
+            'price_cleaning':      items['CLEANING_FEE']['total']['amountMicros'] / 1000000,
+            'taxes':               items['TAXES']['total']['amountMicros'] / 1000000,
             'total':               price_breakdown['total']['total']['amountMicros'] / 1000000,
         }
+
+        if items.get('DISCOUNT'):
+            discount = items['DISCOUNT']['total']['amountMicros'] / 1000000
+            pricing['discount'] = discount
+            if 'Weekly discount' == items['DISCOUNT']['localizedTitle']:
+                pricing['discount_monthly'] = None
+                pricing['discount_weekly'] = discount / price_accommodation
+            elif 'Monthly discount' == items['DISCOUNT']['localizedTitle']:
+                pricing['discount_monthly'] = discount / price_accommodation
+                pricing['discount_weekly'] = None
+            else:
+                raise ValueError('Unhandled discount type: %s' % items['DISCOUNT']['localizedTitle'])
+
+        return pricing
 
     def get_rates(self, product_id: str, start_date: str, end_date: str):
         _api_path = '/api/v3/startStaysCheckout'
