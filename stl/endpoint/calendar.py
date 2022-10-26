@@ -18,6 +18,11 @@ class Pricing(BaseEndpoint):
         product_id = Pdp.get_product_id(listing_id)
         rates = self.get_rates(product_id, checkin, checkout)
         sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
+        if sections['temporaryQuickPayData']['bootstrapPaymentsJSON'] is None:
+            raise ValueError('Error retrieving pricing: {}\n{}'.format(
+                sections['metadata']['errorData']['errorMessage']['errorTitle'],
+                sections['metadata']['errorData']['errorMessage']['errorMessage']
+            ))
         quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
         price_breakdown = quickpay_data['productPriceBreakdown']['priceBreakdown']
         price_items = price_breakdown['priceItems']
