@@ -12,7 +12,7 @@ from stl.endpoint.pdp import Pdp
 
 class Pricing(BaseEndpoint):
 
-    def get_pricing(self, checkin: str, checkout: str, listing_id: str):
+    def get_pricing(self, checkin: str, checkout: str, listing_id: str) -> dict:
         """Get total price for a listing for specific dates."""
         # Get raw price data
         product_id = Pdp.get_product_id(listing_id)
@@ -32,21 +32,22 @@ class Pricing(BaseEndpoint):
         for type_name in ['ACCOMMODATION', 'AIRBNB_GUEST_FEE', 'CLEANING_FEE', 'DISCOUNT', 'TAXES']:
             type_items = [i for i in price_items if i['type'] == type_name]
             if not type_items:
-                if type_name != 'DISCOUNT':
+                if type_name not in ['CLEANING_FEE', 'DISCOUNT', 'TAXES']:
                     raise ValueError('Unexpected missing section type: %s' % type_name)
-                continue  # Missing discount is ok
+                continue  # Missing CLEANING_FEE, DISCOUNT or TAXES is ok
             if len(type_items) > 1:
                 raise ValueError('Unexpected multiple section type: %s' % type_name)
             items[type_name] = type_items.pop()
 
         # Create normalized pricing object
         price_accommodation = items['ACCOMMODATION']['total']['amountMicros'] / 1000000
-        taxes = items['TAXES']['total']['amountMicros'] / 1000000
+        taxes = items['TAXES']['total']['amountMicros'] / 1000000 if items.get('TAXES') else 0
+        cleaning_fee = items['CLEANING_FEE']['total']['amountMicros'] / 1000000 if items.get('CLEANING_FEE') else 0
         pricing = {
             'nights':              nights,
             'price_nightly':       price_accommodation / nights,
             'price_accommodation': price_accommodation,
-            'price_cleaning':      items['CLEANING_FEE']['total']['amountMicros'] / 1000000,
+            'price_cleaning':      cleaning_fee,
             'taxes':               taxes,
             'airbnb_fee':          items['AIRBNB_GUEST_FEE']['total']['amountMicros'] / 1000000,
             'total':               price_breakdown['total']['total']['amountMicros'] / 1000000,
