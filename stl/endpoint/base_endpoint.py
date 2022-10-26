@@ -2,6 +2,7 @@ import json
 import requests
 
 from abc import ABC
+from random import randint
 from time import sleep
 from urllib.parse import urlunparse, urlencode
 
@@ -22,6 +23,7 @@ class BaseEndpoint(ABC):
         headers = {'x-airbnb-api-key': self._api_key}
         max_attempts = 3
         while attempts < max_attempts:
+            sleep(randint(0, 2))  # do a little throttling
             attempts += 1
             response = requests.request(method, url, headers=headers, data=data)
             response_json = response.json()
