@@ -51,13 +51,13 @@ class BaseEndpoint(ABC):
         query['extensions'] = json.dumps(query['extensions'], separators=(',', ':'))
 
     @staticmethod
-    def __handle_api_error(errors):
-        assert isinstance(errors, list)
+    def __handle_api_error(errors: list):
         error = errors.pop()
-        if (isinstance(error, dict)
-                and error.get('extensions')
-                and error['extensions'].get('response')
-                and error['extensions']['response'].get('statusCode') == 403):
-            raise ForbiddenException(errors)
-        else:
-            raise ApiException(errors)
+        if isinstance(error, dict) and error.get('extensions') and error['extensions'].get('response'):
+            status_code = error['extensions']['response'].get('statusCode')
+            if status_code == 403:
+                raise ForbiddenException([error])
+            if status_code >= 500:
+                raise ServerException([error])
+
+        raise ApiException(errors)
