@@ -260,7 +260,7 @@ class Calendar(BaseEndpoint):
                     continue  # skip dates in the past
 
                 # is either today or in the future
-                if day['availableForCheckin']:
+                if day['available']:
                     if first_available_date is None:
                         first_available_date = day['calendarDate']
                     booking_calendar[day['calendarDate']] = False
