@@ -97,20 +97,25 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
         if source == 'elasticsearch':
             assert isinstance(self.__persistence, Elastic)
             for listing_id in self.__persistence.get_all_index_ids():
-                try:
-                    booking_calendar = self.__calendar.get_calendar(listing_id)
-                    pricing_data = self.__calendar.get_rate_data(listing_id, booking_calendar)
-                    self.__persistence.update_calendar(listing_id, booking_calendar)
-                    self.__persistence.update_pricing(listing_id, pricing_data)
-                except ForbiddenException:
-                    if self.__exists_listing(listing_id):
-                        raise RuntimeError('Could not get listing calendar for existing listing %s' % listing_id)
-                    else:
-                        self.__logger.warning('GONE: deleting listing id {}'.format(listing_id))
-                        self.__persistence.mark_deleted(listing_id)
+                self.__update_calendar_and_pricing(listing_id)
         else:  # source is a listing id
             booking_calendar = self.__calendar.get_calendar(source)
             return booking_calendar, self.__calendar.get_rate_data(source, booking_calendar)
+
+    def __update_calendar_and_pricing(self, listing_id):
+        assert isinstance(self.__persistence, Elastic)
+        self.__logger.info(listing_id + ': getting pricing and calendar data...')
+        try:
+            booking_calendar = self.__calendar.get_calendar(listing_id)
+            pricing_data = self.__calendar.get_rate_data(listing_id, booking_calendar)
+            self.__persistence.update_calendar(listing_id, booking_calendar)
+            self.__persistence.update_pricing(listing_id, pricing_data)
+        except ForbiddenException:
+            if self.__exists_listing(listing_id):
+                raise RuntimeError('Could not get listing calendar for existing listing %s' % listing_id)
+            else:
+                self.__logger.warning('GONE: deleting listing id {}'.format(listing_id))
+                self.__persistence.mark_deleted(listing_id)
 
     @staticmethod
     def __exists_listing(listing_id):
