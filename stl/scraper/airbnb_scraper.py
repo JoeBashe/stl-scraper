@@ -1,6 +1,7 @@
 import json
 import requests
 
+from datetime import timedelta
 from logging import Logger
 from urllib.parse import urlparse, parse_qs
 
@@ -99,17 +100,31 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
             for listing_id in self.__persistence.get_all_index_ids():
                 self.__update_calendar_and_pricing(listing_id)
         else:  # source is a listing id
-            booking_calendar = self.__calendar.get_calendar(source)
-            return booking_calendar, self.__calendar.get_rate_data(source, booking_calendar)
+            booking_calendar, min_nights, max_nights = self.__calendar.get_calendar(source)
+            return booking_calendar, self.__calendar.get_rate_data(
+                source, booking_calendar, min_nights, max_nights, True)
 
     def __update_calendar_and_pricing(self, listing_id):
         assert isinstance(self.__persistence, Elastic)
         self.__logger.info(listing_id + ': getting pricing and calendar data...')
         try:
-            booking_calendar = self.__calendar.get_calendar(listing_id)
-            pricing_data = self.__calendar.get_rate_data(listing_id, booking_calendar)
+            booking_calendar, min_nights, max_nights = self.__calendar.get_calendar(listing_id)
+            assert isinstance(booking_calendar, dict)
+            for date_range in Calendar.get_date_ranges('booked', booking_calendar):
+                if date_range['length'] > 70:
+                    # assume 90+ night bookings not real and remove them from booking calendar
+                    booking_dates = [(date_range['start'] + timedelta(days=i)).strftime('%Y-%m-%d')
+                                     for i in range(date_range['length'])]
+                    booking_calendar = {k: booking_calendar[k] for k in (set(booking_calendar) - set(booking_dates))}
+                elif date_range['length'] > 50:
+                    self.__logger.warning('{}: {} day booking'.format(listing_id, date_range['length']))
+
             self.__persistence.update_calendar(listing_id, booking_calendar)
-            self.__persistence.update_pricing(listing_id, pricing_data)
+            pricing_doc = self.__calendar.get_rate_data(listing_id, booking_calendar, min_nights, max_nights)
+            if not pricing_doc:
+                self.__logger.warning('Could not get pricing data for {}'.format(listing_id))
+                return
+            self.__persistence.update_pricing(listing_id, pricing_doc, min_nights, max_nights)
         except ForbiddenException:
             if self.__exists_listing(listing_id):
                 raise RuntimeError('Could not get listing calendar for existing listing %s' % listing_id)

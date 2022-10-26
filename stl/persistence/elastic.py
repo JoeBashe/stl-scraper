@@ -162,12 +162,10 @@ class Elastic(PersistenceInterface):
                 'updated_at': datetime.now()
             })
 
-    def update_pricing(self, listing_id: str, pricing: dict):
-        doc = {
-            'price_nightly':    pricing['price_nightly'],
-            'price_cleaning':   pricing['price_cleaning'],
-            'discount_monthly': pricing['discount_monthly'],
-            'discount_weekly':  pricing['discount_weekly'],
-        }
+    def update_pricing(self, listing_id: str, pricing: dict, min_nights: int = None, max_nights: int = None):
+        if max_nights:
+            pricing['nights_max'] = max_nights
+        if min_nights:
+            pricing['nights_min'] = min_nights
 
-        self.__es.update(index=self.__index, id=listing_id, doc=doc)
+        self.__es.update(index=self.__index, id=listing_id, doc=pricing)
