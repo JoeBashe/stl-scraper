@@ -19,23 +19,19 @@ class BaseEndpoint(ABC):
             data = {}
 
         attempts = 0
-        errors = response_json = None
         headers = {'x-airbnb-api-key': self._api_key}
         max_attempts = 3
         while attempts < max_attempts:
             attempts += 1
-            if attempts > 1:  # sleep one minute on attempts after the first
-                sleep(60)
             response = requests.request(method, url, headers=headers, data=data)
             response_json = response.json()
             errors = response_json.get('errors')
             if not errors:
-                break
+                return response_json
 
-        if errors:
             self.__handle_api_error(errors)
 
-        return response_json
+        raise ApiException(['Could not complete API {} request to "{}"'.format(method, url)])
 
     @staticmethod
     def build_airbnb_url(path: str, query=None):
@@ -58,6 +54,7 @@ class BaseEndpoint(ABC):
             if status_code == 403:
                 raise ForbiddenException([error])
             if status_code >= 500:
-                raise ServerException([error])
+                sleep(60)  # sleep for a minute and then make another attempt
+                return
 
         raise ApiException(errors)
