@@ -1,3 +1,4 @@
+from datetime import datetime
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk, scan
 from elasticsearch.exceptions import RequestError
@@ -124,26 +125,46 @@ class Elastic(PersistenceInterface):
 
     def update_calendar(self, listing_id: str, calendar: dict):
         booked_dates = [dt for dt, is_booked in calendar.items() if is_booked]
-        for dt in booked_dates:
+        exists_booking_field = self.__es.search(index=self.__index, query={
+            "bool": {
+                "must":   {
+                    "exists": {
+                        "field": "bookings"
+                    }
+                },
+                "filter": {
+                    "term": {"_id": listing_id}
+                }
+            }
+        })
+        bookings = [{'date': dt} for dt in booked_dates]
+        if exists_booking_field.body['hits']['hits']:
             script = {
                 "source": """
-                    if (!ctx._source.bookings.contains(params.booking)) {
-                        ctx._source.bookings.add(params.booking);
+                    for (int i = 0; i < params.bookings; i++) {
+                        def booking = params.bookings[i];
+                        if (!ctx._source.bookings.contains(booking)) {
+                            ctx._source.bookings.add(booking);
+                        }
                     }
+                    ctx._source.updated_at = params.now;
                 """,
                 "params": {
-                    "booking": {
-                        "date": dt
-                    }
+                    "bookings": bookings,
+                    "now":      datetime.now()
                 }
             }
             self.__es.update(index=self.__index, id=listing_id, script=script)
+        else:
+            self.__es.update(index=self.__index, id=listing_id, doc={
+                'bookings':   bookings,
+                'updated_at': datetime.now()
+            })
 
     def update_pricing(self, listing_id: str, pricing: dict):
         doc = {
             'price_nightly':    pricing['price_nightly'],
             'price_cleaning':   pricing['price_cleaning'],
-            'tax_rate':         pricing['tax_rate'],
             'discount_monthly': pricing['discount_monthly'],
             'discount_weekly':  pricing['discount_weekly'],
         }
