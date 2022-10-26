@@ -40,11 +40,13 @@ Arguments:
         currency = args.get('--currency') or 'USD'
         if args.get('search'):
             query = args['<query>']
-            scraper = StlCommand.__create_scraper('search', currency, config, project_path, query)
+            persistence = StlCommand.__create_persistence(config, project_path, query)
+            scraper = StlCommand.__create_scraper('search', persistence,  config, currency)
             params = StlCommand.__get_search_params(args, config)
             scraper.run(query, params)
         elif args.get('calendar'):
-            scraper = StlCommand.__create_scraper('calendar', currency, config, project_path)
+            persistence = StlCommand.__create_persistence(config, project_path)
+            scraper = StlCommand.__create_scraper('calendar', persistence, config, currency)
             source = args['<source>']
             scraper.run(source)
         elif args.get('data'):
@@ -80,11 +82,27 @@ Arguments:
     @staticmethod
     def __create_scraper(
             scraper_type: str,
+            persistence: PersistenceInterface,
             config: ConfigParser,
-            project_path: str,
             currency: str,
-            query: str = None
     ) -> AirbnbScraperInterface:
+        # create scraper
+        api_key = config['airbnb']['api_key']
+        logger = logging.getLogger(__class__.__module__.lower())
+        if scraper_type == 'search':
+            explore = Explore(api_key, currency)
+            pdp = Pdp(api_key, currency)
+            reviews = Reviews(api_key, currency)
+            return AirbnbSearchScraper(explore, pdp, reviews, persistence, logger)
+        elif scraper_type == 'calendar':
+            pricing = Pricing(api_key, currency)
+            calendar = Calendar(api_key, currency, pricing)
+            return AirbnbCalendarScraper(calendar, persistence, logger)
+        else:
+            raise RuntimeError('Unknown scraper type: %s' % scraper_type)
+
+    @staticmethod
+    def __create_persistence(config: ConfigParser, project_path: str = None, query: str = None):
         # config persistence layer
         storage_type = config['storage']['type']
         if storage_type == 'elasticsearch':
@@ -98,20 +116,7 @@ Arguments:
             csv_path = os.path.join(project_path, '{}.csv'.format(query))
             persistence = Csv(csv_path)
 
-        # create scraper
-        api_key = config['airbnb']['api_key']
-        logger = logging.getLogger(__class__.__module__.lower())
-        if scraper_type == 'search':
-            explore = Explore(api_key, currency)
-            pdp = Pdp(api_key, currency)
-            reviews = Reviews(api_key, currency)
-            return AirbnbSearchScraper(explore, pdp, reviews, persistence, logger)
-        elif scraper_type == 'calendar':
-            calendar = Calendar(api_key, currency)
-            pricing = Pricing(api_key, currency)
-            return AirbnbCalendarScraper(calendar, pricing, persistence, logger)
-        else:
-            raise RuntimeError('Unknown scraper type: %s' % scraper_type)
+        return persistence
 
     @staticmethod
     def __get_search_params(args, config):
