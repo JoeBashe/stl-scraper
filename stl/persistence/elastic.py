@@ -71,6 +71,7 @@ class Elastic(PersistenceInterface):
         self.__index = index
 
     def create_index_if_not_exists(self, index_name: str):
+        """Create an index if it doesn't already exist."""
         if self.__es.indices.exists(index=index_name):
             return
         try:
@@ -80,18 +81,36 @@ class Elastic(PersistenceInterface):
                 raise
 
     def delete(self, listing_id: str):
+        """Delete a listing by id."""
         self.__es.delete(index=self.__index, id=listing_id)
 
     def get_all_index_ids(self):
+        """Get all index ids, except those marked as deleted."""
+        query = {
+            "query": {
+                "bool": {
+                    "must_not": {
+                        "term": {
+                            "deleted": True
+                        }
+                    }
+                }
+            }
+        }
         hits = scan(
             self.__es,
-            query={"query": {"match_all": {}}},
+            query=query,
             scroll='1m',
             index=self.__index
         )
         return (hit['_id'] for hit in hits)
 
+    def mark_deleted(self, listing_id: str):
+        """Mark a listing as deleted by setting the 'deleted' field to True."""
+        self.__es.update(index=self.__index, id=listing_id, doc={'deleted': True})
+
     def save(self, query: str, listings: list):
+        """Bulk save listings by upsert."""
         bulk(self.__es, index=self.__index, actions=[{
             '_op_type':      'update',
             '_id':           listing['id'],
