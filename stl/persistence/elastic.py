@@ -61,6 +61,7 @@ class Elastic(PersistenceInterface):
             "room_type_category":     {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "satisfaction_guest":     {"type": "float"},
             "site_id":                {"type": "integer"},
+            "source":                 {"type": "keyword"},
             "star_rating":            {"type": "float"},
             "state":                  {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "street_number":          {"type": "keyword"},
