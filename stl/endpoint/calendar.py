@@ -52,8 +52,9 @@ class Pricing(BaseEndpoint):
         }
 
         if items.get('DISCOUNT'):
-            discount = items['DISCOUNT']['total']['amountMicros'] / 1000000
+            discount = -1 * (items['DISCOUNT']['total']['amountMicros'] / 1000000)
             pricing['discount'] = discount
+            pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'] - discount)
             if 'Weekly discount' == items['DISCOUNT']['localizedTitle']:
                 pricing['discount_monthly'] = None
                 pricing['discount_weekly'] = discount / price_accommodation
@@ -62,6 +63,8 @@ class Pricing(BaseEndpoint):
                 pricing['discount_weekly'] = None
             else:
                 raise ValueError('Unhandled discount type: %s' % items['DISCOUNT']['localizedTitle'])
+        else:
+            pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'])
 
         return pricing
 
