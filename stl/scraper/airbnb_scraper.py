@@ -111,8 +111,8 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
             calendar, min_nights, max_nights = self.__calendar.get_calendar(listing_id)
             assert isinstance(calendar, dict)
             for date_range in Calendar.get_date_ranges('booked', calendar):
-                if date_range['length'] > 70:
-                    # assume 70+ night bookings not real and remove them from booking calendar
+                if date_range['length'] > 62:
+                    # assume 62+ night bookings not real and remove them from booking calendar
                     booking_dates = [(date_range['start'] + timedelta(days=i)).strftime('%Y-%m-%d')
                                      for i in range(date_range['length'])]
                     calendar = {dt: calendar[dt] for dt in sorted(set(calendar) - set(booking_dates))}
