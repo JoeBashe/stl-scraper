@@ -163,12 +163,11 @@ class Calendar(BaseEndpoint):
     def get_rate_data(
             self,
             listing_id: str,
-            booking_calendar: dict,
+            ranges: list,
             min_nights: int = None,
             max_nights: int = None,
             full_data: bool = False
     ) -> dict:
-        ranges = Calendar.get_date_ranges('available', booking_calendar)
         test_lengths = self.__get_test_lengths(max_nights, min_nights)
         pricing_data = {}
         for test_length in test_lengths:
