@@ -2,9 +2,10 @@ import json
 import requests
 
 from abc import ABC
+from time import sleep
 from urllib.parse import urlunparse, urlencode
 
-from stl.exception.api import ApiException, ForbiddenException
+from stl.exception.api import ApiException, ForbiddenException, ServerException
 
 
 class BaseEndpoint(ABC):
@@ -17,11 +18,20 @@ class BaseEndpoint(ABC):
         if data is None:
             data = {}
 
+        attempts = 0
+        errors = response_json = None
         headers = {'x-airbnb-api-key': self._api_key}
-        response = requests.request(method, url, headers=headers, data=data)
-        response_json = response.json()
+        max_attempts = 3
+        while attempts < max_attempts:
+            attempts += 1
+            if attempts > 1:  # sleep one minute on attempts after the first
+                sleep(60)
+            response = requests.request(method, url, headers=headers, data=data)
+            response_json = response.json()
+            errors = response_json.get('errors')
+            if not errors:
+                break
 
-        errors = response_json.get('errors')
         if errors:
             self.__handle_api_error(errors)
 
