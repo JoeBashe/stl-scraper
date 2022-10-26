@@ -6,7 +6,7 @@ from random import randint
 from time import sleep
 from urllib.parse import urlunparse, urlencode
 
-from stl.exception.api import ApiException, ForbiddenException, ServerException
+from stl.exception.api import ApiException, ForbiddenException
 
 
 class BaseEndpoint(ABC):
