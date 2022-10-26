@@ -8,7 +8,9 @@ from stl.endpoint.calendar import Calendar, Pricing
 from stl.endpoint.explore import Explore
 from stl.endpoint.pdp import Pdp
 from stl.endpoint.reviews import Reviews
-from stl.persistence.persistence_interface import PersistenceInterface
+from stl.exception.api import ForbiddenException
+from stl.persistence.elastic import Elastic
+from stl.persistence import PersistenceInterface
 
 
 class AirbnbScraperInterface:

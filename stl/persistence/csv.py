@@ -1,6 +1,6 @@
 import csv
 
-from stl.persistence.persistence_interface import PersistenceInterface
+from stl.persistence import PersistenceInterface
 
 
 class Csv(PersistenceInterface):

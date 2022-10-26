@@ -12,6 +12,7 @@ from stl.endpoint.pdp import Pdp
 from stl.endpoint.reviews import Reviews
 from stl.persistence.csv import Csv
 from stl.persistence.elastic import Elastic
+from stl.persistence import PersistenceInterface
 from stl.scraper.airbnb_scraper import AirbnbSearchScraper, AirbnbCalendarScraper, AirbnbScraperInterface
 
 
