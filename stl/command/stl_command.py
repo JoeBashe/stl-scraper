@@ -4,6 +4,7 @@ import sys
 
 from configparser import ConfigParser
 from elasticsearch import Elasticsearch
+from logging import Logger
 
 from stl.endpoint.calendar import Calendar, Pricing
 from stl.endpoint.explore import Explore
@@ -34,19 +35,19 @@ Arguments:
 
     @staticmethod
     def execute(args: dict):
-        # get config
+        logger = logging.getLogger(__class__.__module__.lower())
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
         config = StlCommand.__config(project_path)
         currency = args.get('--currency') or 'USD'
         if args.get('search'):
             query = args['<query>']
             persistence = StlCommand.__create_persistence(config, project_path, query)
-            scraper = StlCommand.__create_scraper('search', persistence,  config, currency)
+            scraper = StlCommand.__create_scraper('search', persistence, config, currency, logger)
             params = StlCommand.__get_search_params(args, config)
             scraper.run(query, params)
         elif args.get('calendar'):
             persistence = StlCommand.__create_persistence(config, project_path)
-            scraper = StlCommand.__create_scraper('calendar', persistence, config, currency)
+            scraper = StlCommand.__create_scraper('calendar', persistence, config, currency, logger)
             source = args['<source>']
             scraper.run(source)
         elif args.get('data'):
@@ -85,10 +86,10 @@ Arguments:
             persistence: PersistenceInterface,
             config: ConfigParser,
             currency: str,
+            logger: Logger
     ) -> AirbnbScraperInterface:
         # create scraper
         api_key = config['airbnb']['api_key']
-        logger = logging.getLogger(__class__.__module__.lower())
         if scraper_type == 'search':
             explore = Explore(api_key, currency)
             pdp = Pdp(api_key, currency)
