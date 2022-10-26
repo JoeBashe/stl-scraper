@@ -98,15 +98,19 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
             assert isinstance(self.__persistence, Elastic)
             for listing_id in self.__persistence.get_all_index_ids():
                 try:
-                    self.__calendar.get_calendar(listing_id=listing_id)
+                    booking_calendar = self.__calendar.get_calendar(listing_id)
+                    pricing_data = self.__calendar.get_rate_data(listing_id, booking_calendar)
+                    self.__persistence.update_calendar(listing_id, booking_calendar)
+                    self.__persistence.update_pricing(listing_id, pricing_data)
                 except ForbiddenException:
                     if self.__exists_listing(listing_id):
-                        raise RuntimeError('Could not get listing calendar for %s' % listing_id)
+                        raise RuntimeError('Could not get listing calendar for existing listing %s' % listing_id)
                     else:
                         self.__logger.warning('GONE: deleting listing id {}'.format(listing_id))
                         self.__persistence.mark_deleted(listing_id)
-        else:  # it's a listing id
-            self.__calendar.get_calendar(listing_id=source)
+        else:  # source is a listing id
+            booking_calendar = self.__calendar.get_calendar(source)
+            return booking_calendar, self.__calendar.get_rate_data(source, booking_calendar)
 
     @staticmethod
     def __exists_listing(listing_id):

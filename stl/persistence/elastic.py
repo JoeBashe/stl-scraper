@@ -19,11 +19,17 @@ class Elastic(PersistenceInterface):
             "bathrooms":              {"type": "float"},
             "bedrooms":               {"type": "short"},
             "beds":                   {"type": "integer"},
+            "bookings":               {
+                "type":       "nested",
+                "properties": {"date": {"type": "date", "format": "yyyy-MM-dd"}}
+            },
             "business_travel_ready":  {"type": "boolean"},
             "city":                   {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "country":                {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "coordinates":            {"type": "geo_point"},
             "description":            {"type": "text"},
+            "discount_monthly":       {"type": "float"},
+            "discount_weekly":        {"type": "float"},
             "host_id":                {"type": "integer", "fields": {"keyword": {"type": "keyword"}}},
             "house_rules":            {"type": "text"},
             "interaction":            {"type": "text"},
@@ -32,15 +38,14 @@ class Elastic(PersistenceInterface):
             "listing_key":            {"type": "keyword"},
             "listing_key_numeric":    {"type": "long"},
             "longitude":              {"type": "double"},
-            "monthly_price_factor":   {"type": "float"},
             "name":                   {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "neighborhood_overview":  {"type": "text"},
             "person_capacity":        {"type": "integer"},
             "photo_count":            {"type": "integer"},
             "photos":                 {"type": "keyword"},
             "place_id":               {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
-            "price_rate":             {"type": "float"},
-            "price_rate_type":        {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+            "price_nightly":          {"type": "float"},
+            "price_cleaning":         {"type": "float"},
             "province":               {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
             "rating_accuracy":        {"type": "float"},
             "rating_checkin":         {"type": "float"},
@@ -61,7 +66,6 @@ class Elastic(PersistenceInterface):
             "street_number_numeric":  {"type": "integer"},
             "transit":                {"type": "text"},
             "url":                    {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
-            "weekly_price_factor":    {"type": "float"},
             "year_built":             {"type": "integer"}
         }
     }
@@ -117,3 +121,31 @@ class Elastic(PersistenceInterface):
             'doc':           listing,
             'doc_as_upsert': True
         } for listing in listings])
+
+    def update_calendar(self, listing_id: str, calendar: dict):
+        booked_dates = [dt for dt, is_booked in calendar.items() if is_booked]
+        for dt in booked_dates:
+            script = {
+                "source": """
+                    if (!ctx._source.bookings.contains(params.booking)) {
+                        ctx._source.bookings.add(params.booking);
+                    }
+                """,
+                "params": {
+                    "booking": {
+                        "date": dt
+                    }
+                }
+            }
+            self.__es.update(index=self.__index, id=listing_id, script=script)
+
+    def update_pricing(self, listing_id: str, pricing: dict):
+        doc = {
+            'price_nightly':    pricing['price_nightly'],
+            'price_cleaning':   pricing['price_cleaning'],
+            'tax_rate':         pricing['tax_rate'],
+            'discount_monthly': pricing['discount_monthly'],
+            'discount_weekly':  pricing['discount_weekly'],
+        }
+
+        self.__es.update(index=self.__index, id=listing_id, doc=doc)

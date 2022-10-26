@@ -97,7 +97,7 @@ Arguments:
             return AirbnbSearchScraper(explore, pdp, reviews, persistence, logger)
         elif scraper_type == 'calendar':
             pricing = Pricing(api_key, currency)
-            calendar = Calendar(api_key, currency, pricing)
+            calendar = Calendar(api_key, currency, pricing, logger)
             return AirbnbCalendarScraper(calendar, persistence, logger)
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)

@@ -2,6 +2,7 @@ import json
 
 from datetime import date, datetime, timedelta
 from itertools import groupby
+from logging import Logger
 from operator import itemgetter
 
 from stl.endpoint.base_endpoint import BaseEndpoint
@@ -38,12 +39,14 @@ class Pricing(BaseEndpoint):
 
         # Create normalized pricing object
         price_accommodation = items['ACCOMMODATION']['total']['amountMicros'] / 1000000
+        taxes = items['TAXES']['total']['amountMicros'] / 1000000
         pricing = {
             'nights':              nights,
             'price_nightly':       price_accommodation / nights,
             'price_accommodation': price_accommodation,
             'price_cleaning':      items['CLEANING_FEE']['total']['amountMicros'] / 1000000,
-            'taxes':               items['TAXES']['total']['amountMicros'] / 1000000,
+            'taxes':               taxes,
+            'tax_rate':            taxes / price_accommodation,
             'total':               price_breakdown['total']['total']['amountMicros'] / 1000000,
         }
 
@@ -109,15 +112,36 @@ class Pricing(BaseEndpoint):
 class Calendar(BaseEndpoint):
     N_MONTHS = 12  # number of months of data to return; 12 months == 1 year
 
-    def __init__(self, api_key: str, currency: str, pricing: Pricing):
+    def __init__(self, api_key: str, currency: str, pricing: Pricing, logger: Logger):
         super().__init__(api_key, currency)
+        self.__logger = logger
         self.__pricing = pricing
         self.__today = datetime.today()
 
-    def get_calendar(self, listing_id: str):
+    def get_calendar(self, listing_id: str) -> dict:
         url = self.get_url(listing_id)
         response_data = self._api_request(url)
-        self.__parse_response(listing_id, response_data)
+        return self.__get_booking_calendar(response_data)
+
+    def get_rate_data(self, listing_id: str, booking_calendar: dict) -> dict:
+        ranges = self.__get_available_date_ranges(booking_calendar)
+        # run test queries to get monthly, weekly, and daily rates
+        pricing_data = {}
+        for test_length in [28, 7, 1]:  # check monthly, weekly and daily pricing
+            possible_ranges = [r for r in ranges if r.get('length') >= test_length]
+            if not possible_ranges:
+                self.__logger.warning('{}: Unable to find available {} day range'.format(listing_id, test_length))
+                continue
+            test_range = possible_ranges.pop()
+            start_time = test_range['start'].strftime('%Y-%m-%d')
+            end_time = (test_range['start'] + timedelta(days=test_length)).strftime('%Y-%m-%d')
+            pricing_data[test_length] = self.__pricing.get_pricing(
+                start_time,
+                end_time,
+                listing_id
+            )
+
+        return pricing_data
 
     def get_url(self, listing_id: str) -> str:
         """Get PdpAvailabilityCalendar URL."""
@@ -145,7 +169,25 @@ class Calendar(BaseEndpoint):
 
         return self.build_airbnb_url(_api_path, query)
 
-    def __parse_response(self, listing_id: str, data: dict) -> dict:
+    @staticmethod
+    def __get_available_date_ranges(booking_calendar: dict) -> list:
+        # get list of date ranges that are free for test price queries
+        available_dates = [datetime.strptime(dt, '%Y-%m-%d').toordinal()
+                           for dt, is_booked in booking_calendar.items() if not is_booked]
+        ranges = []
+        for k, g in groupby(enumerate(available_dates), lambda i: i[0] - i[1]):
+            group = list(map(itemgetter(1), g))
+            start_date = date.fromordinal(group[0])
+            end_date = date.fromordinal(group[-1]) + timedelta(days=1)
+            ranges.append({
+                'start':  start_date,
+                'end':    end_date,
+                'length': (end_date - start_date).days
+            })
+
+        return ranges
+
+    def __get_booking_calendar(self, data: dict) -> dict:
         calendar_months = data['data']['merlin']['pdpAvailabilityCalendar']['calendarMonths']
         first_available_date = None
         booking_calendar = {}
@@ -165,34 +207,5 @@ class Calendar(BaseEndpoint):
                 else:
                     booking_calendar[day['calendarDate']] = True
                     booked_days += 1
-
-            print('{}-{} occupancy ratio: {:.2f}'.format(month['year'], month['month'], booked_days / total_days))
-
-        # get list of date ranges that are free for test price queries
-        available_dates = [
-            datetime.strptime(dt, '%Y-%m-%d').toordinal()
-            for dt, is_booked in booking_calendar.items() if not is_booked
-        ]
-        ranges = []
-        for k, g in groupby(enumerate(available_dates), lambda i: i[0] - i[1]):
-            group = list(map(itemgetter(1), g))
-            start_date = date.fromordinal(group[0])
-            end_date = date.fromordinal(group[-1]) + timedelta(days=1)
-            ranges.append({
-                'start':  start_date,
-                'end':    end_date,
-                'length': (end_date - start_date).days
-            })
-
-        for test_length in [28, 7, 1]:  # check monthly, weekly and daily pricing
-            test_range = [r for r in ranges if r.get('length') >= test_length].pop()
-            start_time = test_range['start'].strftime('%Y-%m-%d')
-            end_time = (test_range['start'] + timedelta(days=test_length)).strftime('%Y-%m-%d')
-            pricing = self.__pricing.get_pricing(
-                start_time,
-                end_time,
-                listing_id
-            )
-            pass
 
         return booking_calendar
