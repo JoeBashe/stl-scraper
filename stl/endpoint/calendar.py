@@ -22,8 +22,9 @@ class Pricing(BaseEndpoint):
         price_items = price_breakdown['priceItems']
         nights = (datetime.strptime(checkout, '%Y-%m-%d') - datetime.strptime(checkin, '%Y-%m-%d')).days
 
-        if len(price_items) > 4:
-            raise ValueError('Unexpected extra section types')
+        if len(price_items) > 5:
+            raise ValueError(
+                'Unexpected extra section types:\n{}'.format(', '.join([pi['type'] for pi in price_items])))
 
         # Parse price line items
         items = {}
