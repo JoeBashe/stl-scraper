@@ -28,7 +28,7 @@ class Pricing(BaseEndpoint):
 
         # Parse price line items
         items = {}
-        for type_name in ['ACCOMMODATION', 'CLEANING_FEE', 'DISCOUNT', 'TAXES']:
+        for type_name in ['ACCOMMODATION', 'AIRBNB_GUEST_FEE', 'CLEANING_FEE', 'DISCOUNT', 'TAXES']:
             type_items = [i for i in price_items if i['type'] == type_name]
             if not type_items:
                 if type_name != 'DISCOUNT':
@@ -47,7 +47,7 @@ class Pricing(BaseEndpoint):
             'price_accommodation': price_accommodation,
             'price_cleaning':      items['CLEANING_FEE']['total']['amountMicros'] / 1000000,
             'taxes':               taxes,
-            'tax_rate':            taxes / price_accommodation,
+            'airbnb_fee':          items['AIRBNB_GUEST_FEE']['total']['amountMicros'] / 1000000,
             'total':               price_breakdown['total']['total']['amountMicros'] / 1000000,
         }
 
