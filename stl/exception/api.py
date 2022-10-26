@@ -6,4 +6,10 @@ class ApiException(Exception):
 
 
 class ForbiddenException(ApiException):
+    """HTTP 403 Forbidden Exception"""
+    pass
+
+
+class ServerException(ApiException):
+    """HTTP 500 Server Error Exception"""
     pass
