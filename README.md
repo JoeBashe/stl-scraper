@@ -2,7 +2,8 @@
 
 Scrape short-term listings providers (Airbnb).
 
-Given a search query, e.g. "San Diego, CA" or "Rome, Italy", search Airbnb inventory and collect data on listings. Save results to a CSV file.
+Given a search query, e.g. "San Diego, CA" or "Rome, Italy", search Airbnb inventory and collect data on listings. Save
+results to a CSV file.
 
 ## Usage
 
@@ -11,7 +12,27 @@ Given a search query, e.g. "San Diego, CA" or "Rome, Italy", search Airbnb inven
 . env/bin/activate
 
 # run the script
-./stl.py "Madrid, Spain"
+./stl.py search "Madrid, Spain"
+```
+
+## Options
+
+```shell
+Short-Term Listings (STL) Scraper
+
+Usage:
+    stl.py search <query> [--currency=<currency>] [--roomTypes=<roomTypes>] [--source=<source>]
+    stl.py calendar <listingSource> [--currency=<currency>] [--source=<source>]
+    stl.py pricing <listingId> <checkin> <checkout> [--currency=<currency>] [--source=<source>]
+    stl.py data <listingId> [--source=<source>]
+
+Arguments:
+    <query>         - The query string to search (e.g. "San Diego, CA").
+    <currency>      - "USD", "EUR", etc. (default: USD)
+    <listingId>     - The listing id.
+    <roomTypes>     - e.g. "Entire home/apt". Can include multiple separated by comma.
+    <listingSource> - One of either: a. listing ID; or b. the special keyword "elasticsearch".
+    <source>        - Only allows "airbnb" for now. (default: "airbnb")
 ```
 
 ## Requirements
