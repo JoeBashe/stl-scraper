@@ -38,7 +38,7 @@ Arguments:
         logger = logging.getLogger(__class__.__module__.lower())
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
         config = StlCommand.__config(project_path)
-        currency = args.get('--currency') or 'USD'
+        currency = args.get('--currency') or config['search'].get('currency', 'USD')
         if args.get('search'):
             query = args['<query>']
             persistence = StlCommand.__create_persistence(config, project_path, query)
