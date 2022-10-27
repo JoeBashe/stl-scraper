@@ -36,7 +36,7 @@ Arguments:
 
     @staticmethod
     def execute(args: dict):
-        logger = logging.getLogger(__class__.__module__.lower())
+        logger = StlCommand.__get_logger()
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
         config = StlCommand.__config(project_path)
         currency = args.get('--currency') or config['search'].get('currency', 'USD')
@@ -68,13 +68,6 @@ Arguments:
     @staticmethod
     def __config(project_path: str) -> ConfigParser:
         """Config logger, then load and return app config from stl.ini config file."""
-        # config logger
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            handlers=[logging.StreamHandler(sys.stdout)]
-        )
-
         # get app config
         config = ConfigParser()
         config.read(os.path.join(project_path, 'stl.ini'))
@@ -119,6 +112,15 @@ Arguments:
             persistence = Csv(csv_path)
 
         return persistence
+
+    @staticmethod
+    def __get_logger() -> Logger:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            handlers=[logging.StreamHandler(sys.stdout)]
+        )
+        return logging.getLogger(__class__.__module__.lower())
 
     @staticmethod
     def __get_search_params(args, config) -> dict:
