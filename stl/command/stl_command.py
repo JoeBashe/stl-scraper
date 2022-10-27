@@ -68,10 +68,8 @@ Arguments:
     @staticmethod
     def __config(project_path: str) -> ConfigParser:
         """Config logger, then load and return app config from stl.ini config file."""
-        # get app config
         config = ConfigParser()
         config.read(os.path.join(project_path, 'stl.ini'))
-
         return config
 
     @staticmethod
@@ -82,7 +80,6 @@ Arguments:
             currency: str,
             logger: Logger
     ) -> AirbnbScraperInterface:
-        # create scraper
         api_key = config['airbnb']['api_key']
         if scraper_type == 'search':
             explore = Explore(api_key, currency, logger)
