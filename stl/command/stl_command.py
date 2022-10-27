@@ -104,7 +104,7 @@ Arguments:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)
 
     @staticmethod
-    def __create_persistence(config: ConfigParser, project_path: str = None, query: str = None):
+    def __create_persistence(config: ConfigParser, project_path: str = None, query: str = None) -> PersistenceInterface:
         # config persistence layer
         storage_type = config['storage']['type']
         if storage_type == 'elasticsearch':
@@ -121,7 +121,7 @@ Arguments:
         return persistence
 
     @staticmethod
-    def __get_search_params(args, config):
+    def __get_search_params(args, config) -> dict:
         params = {}
         room_types = StlCommand.__get_list_arg(args, config, 'roomTypes')
         if room_types:
@@ -130,7 +130,7 @@ Arguments:
         return params
 
     @staticmethod
-    def __get_list_arg(args: dict, config: ConfigParser, arg_name: str):
+    def __get_list_arg(args: dict, config: ConfigParser, arg_name: str) -> list:
         """Get CLI comma-separated list argument, fall back to config."""
         return list(filter(bool, map(
             str.strip, str(args.get('--{}'.format(arg_name), config['search'].get(arg_name, ''))).split(','))))
