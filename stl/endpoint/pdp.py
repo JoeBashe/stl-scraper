@@ -78,7 +78,13 @@ class Pdp(BaseEndpoint):
         response = requests.get(url)
         doc = lxml.html.fromstring(response.text)
         data_state = json.loads(doc.xpath('//script[@id="data-state"]')[0].text)
-        return data_state['niobeMinimalClientData'][1][1]['variables']['id']
+        if data_state['niobeMinimalClientData'][1][1]['variables'].get('id'):
+            return data_state['niobeMinimalClientData'][1][1]['variables']['id']
+        stays_pdp_sections = json.loads(data_state['niobeMinimalClientData'][0][0].replace('StaysPdpSections:', ''))
+        if stays_pdp_sections.get('id'):
+            return stays_pdp_sections['id']
+
+        raise RuntimeError('Could not get product id')
 
     def get_listing(self, listing_id: str, data_cache: dict, geography: dict, reviews: dict) -> dict:
         product_id = self.get_product_id(listing_id)
