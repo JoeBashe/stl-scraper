@@ -123,7 +123,7 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
             ranges = Calendar.get_date_ranges('available', calendar)
             pricing_doc = self.__calendar.get_rate_data(listing_id, ranges, min_nights, max_nights)
             if not pricing_doc:
-                self.__logger.warning('Could not get pricing data for {}'.format(listing_id))
+                self.__logger.warning('Could not get any pricing data for {}'.format(listing_id))
                 return
             self.__persistence.update_pricing(listing_id, pricing_doc, min_nights, max_nights)
         except ForbiddenException:
