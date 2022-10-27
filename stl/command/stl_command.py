@@ -20,17 +20,18 @@ class StlCommand:
     """Short-Term Listings (STL) Scraper
 
 Usage:
-    stl.py search <query> [--currency=<currency>] [--roomTypes=<roomTypes>]
-    stl.py calendar <source>
-    stl.py data <listingId>
-    stl.py pricing <listingId> <checkin> <checkout>
+    stl.py search <query> [--currency=<currency>] [--roomTypes=<roomTypes>] [--source=<source>]
+    stl.py calendar <listingSource> [--currency=<currency>] [--source=<source>]
+    stl.py pricing <listingId> <checkin> <checkout> [--currency=<currency>] [--source=<source>]
+    stl.py data <listingId> [--source=<source>]
 
 Arguments:
-    <query>     - The query string to search (e.g. "San Diego, CA").
-    <currency>  - USD (default), EUR, etc.
-    <listingId> - The Listing ID
-    <roomTypes> - e.g. "Entire home/apt". Can include multiple separated by comma.
-    <source>    - One of either: a. Listing ID; or b. the special keyword "elasticsearch".
+    <query>         - The query string to search (e.g. "San Diego, CA").
+    <currency>      - "USD", "EUR", etc. (default: USD)
+    <listingId>     - The listing id.
+    <roomTypes>     - e.g. "Entire home/apt". Can include multiple separated by comma.
+    <listingSource> - One of either: a. listing ID; or b. the special keyword "elasticsearch".
+    <source>        - Only allows "airbnb" for now. (default: "airbnb")
 """
 
     @staticmethod
