@@ -133,4 +133,6 @@ Arguments:
     def __get_list_arg(args: dict, config: ConfigParser, arg_name: str) -> list:
         """Get CLI comma-separated list argument, fall back to config."""
         return list(filter(bool, map(
-            str.strip, str(args.get('--{}'.format(arg_name), config['search'].get(arg_name, ''))).split(','))))
+            str.strip,
+            str(args.get('--{}'.format(arg_name)) or config['search'].get(arg_name, '')).split(',')
+        )))
