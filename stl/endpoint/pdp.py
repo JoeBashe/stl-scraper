@@ -77,9 +77,14 @@ class Pdp(BaseEndpoint):
         url = BaseEndpoint.build_airbnb_url('/rooms/{}'.format(listing_id))
         response = requests.get(url)
         doc = lxml.html.fromstring(response.text)
-        data_state = json.loads(doc.xpath('//script[@id="data-state"]')[0].text)
+        result = doc.xpath('//script[@id="data-state"]')
+        if not result:
+            raise RuntimeError('Could not get product id: {}'.format(result))
+
+        data_state = json.loads(result[0].text)
         if data_state['niobeMinimalClientData'][1][1]['variables'].get('id'):
             return data_state['niobeMinimalClientData'][1][1]['variables']['id']
+
         stays_pdp_sections = json.loads(data_state['niobeMinimalClientData'][0][0].replace('StaysPdpSections:', ''))
         if stays_pdp_sections.get('id'):
             return stays_pdp_sections['id']
@@ -138,16 +143,14 @@ class Pdp(BaseEndpoint):
             'room_type':              listing['roomType'],
             'room_type_category':     listing['roomTypeCategory'],
             'star_rating':            listing['starRating'],
-
         }
         if pricing:
+            # add pricing data
             data_cache[listing['id']] |= {
-                # get pricing data
                 'monthly_price_factor': pricing.get('monthlyPriceFactor'),
                 'weekly_price_factor':  pricing.get('weeklyPriceFactor'),
                 'price_rate':           self.__get_price_rate(pricing),
                 'price_rate_type':      self.__get_rate_type(pricing),
-                # use total price if dates given, price rate otherwise. can't show total price if there are no dates.
                 'total_price':          self.__get_total_price(pricing)
             }
 
@@ -235,63 +238,68 @@ class Pdp(BaseEndpoint):
             amenities_access = amenities_avail = []
 
         # Structure data
-        item = dict(
-            id=listing_id,
-            access=self.__render_titles(amenities_access[0]) if amenities_access else None,
-            additional_house_rules=section_data['policies'].get('additionalHouseRules'),
-            allows_events='No parties or events' in [
-                r['title'] for r in section_data['policies'].get('houseRules', [])],
-            amenities=self.__render_titles(amenities_avail, sep=' - ', join=False),
-            amenity_ids=list(self.__get_amenity_ids(amenities_avail)),
-            avg_rating=listing_data_cached['avg_rating'],
-            bathrooms=listing_data_cached['bathrooms'],
-            bedrooms=listing_data_cached['bedrooms'],
-            beds=listing_data_cached['beds'],
-            business_travel_ready=listing_data_cached['business_travel_ready'],
-            can_instant_book=metadata['bookingPrefetchData']['canInstantBook'],
-            city=listing_data_cached.get('city', geography['city']),
-            coordinates={'lon': listing_data_cached['longitude'], 'lat': listing_data_cached['latitude']},
-            country=geography['country'],
-            description=self.__html_to_text(
-                section_data['description']['htmlDescription']['htmlText']
-            ) if (section_data.get('description') and section_data['description'].get('htmlDescription')) else None,
-            host_id=listing_data_cached['host_id'],
-            house_rules=[r['title'] for r in section_data['policies'].get('houseRules', [])],
-            is_hotel=metadata['bookingPrefetchData']['isHotelRatePlanEnabled'],
-            latitude=listing_data_cached['latitude'],
-            listing_expectations=self.__render_titles(
-                section_data['policies']['listingExpectations']) if section_data.get('policies') else None,
-            longitude=listing_data_cached['longitude'],
-            monthly_price_factor=listing_data_cached.get('monthly_price_factor'),
-            name=listing_data_cached.get('name', listing_id),
-            neighborhood_overview=listing_data_cached.get('neighborhood_overview'),
-            # notes=listing['sectioned_description']['notes'],
-            person_capacity=listing_data_cached['person_capacity'],
-            photo_count=listing_data_cached['photo_count'],
-            photos=listing_data_cached['photos'],
-            place_id=geography['placeId'],
-            price_rate=listing_data_cached.get('price_rate'),
-            price_rate_type=listing_data_cached.get('price_rate_type'),
-            province=geography.get('province'),
-            rating_accuracy=logging_data['accuracyRating'],
-            rating_checkin=logging_data['checkinRating'],
-            rating_cleanliness=logging_data['cleanlinessRating'],
-            rating_communication=logging_data['communicationRating'],
-            rating_location=logging_data['locationRating'],
-            rating_value=logging_data['valueRating'],
-            review_count=listing_data_cached['review_count'],
-            reviews=reviews,
-            room_and_property_type=listing_data_cached['room_and_property_type'],
-            room_type=listing_data_cached['room_type'],
-            room_type_category=listing_data_cached['room_type_category'],
-            satisfaction_guest=logging_data['guestSatisfactionOverall'],
-            star_rating=listing_data_cached['star_rating'],
-            state=geography['state'],
-            # summary=listing['sectioned_description']['summary'],
-            total_price=listing_data_cached.get('total_price'),
-            url="https://www.airbnb.com/rooms/{}".format(listing_id),
-            weekly_price_factor=listing_data_cached.get('weekly_price_factor')
-        )
+        policies = []
+        listing_expectations = None
+        if section_data.get('policies'):
+            listing_expectations = self.__render_titles(section_data['policies']['listingExpectations'])
+            if section_data['policies'].get('houseRules'):
+                policies = [r['title'] for r in section_data['policies']['houseRules']]
+
+        description = ''
+        if section_data.get('description') and section_data['description'].get('htmlDescription'):
+            description = self.__html_to_text(section_data['description']['htmlDescription']['htmlText'])
+
+        item = {
+            'id':                     listing_id,
+            'access':                 self.__render_titles(amenities_access[0]) if amenities_access else None,
+            'additional_house_rules': section_data['policies'].get('additionalHouseRules'),
+            'allows_events':          'No parties or events' in policies,
+            'amenities':              self.__render_titles(amenities_avail, sep=' - ', join=False),
+            'amenity_ids':            list(self.__get_amenity_ids(amenities_avail)),
+            'avg_rating':             listing_data_cached['avg_rating'],
+            'bathrooms':              listing_data_cached['bathrooms'],
+            'bedrooms':               listing_data_cached['bedrooms'],
+            'beds':                   listing_data_cached['beds'],
+            'business_travel_ready':  listing_data_cached['business_travel_ready'],
+            'can_instant_book':       metadata['bookingPrefetchData']['canInstantBook'],
+            'city':                   listing_data_cached.get('city', geography['city']),
+            'coordinates':            {'lon': listing_data_cached['longitude'], 'lat': listing_data_cached['latitude']},
+            'country':                geography['country'],
+            'description':            description,
+            'host_id':                listing_data_cached['host_id'],
+            'house_rules':            [r['title'] for r in section_data['policies'].get('houseRules', [])],
+            'is_hotel':               metadata['bookingPrefetchData']['isHotelRatePlanEnabled'],
+            'latitude':               listing_data_cached['latitude'],
+            'listing_expectations':   listing_expectations,
+            'longitude':              listing_data_cached['longitude'],
+            'monthly_price_factor':   listing_data_cached.get('monthly_price_factor'),
+            'name':                   listing_data_cached.get('name', listing_id),
+            'neighborhood_overview':  listing_data_cached.get('neighborhood_overview'),
+            'person_capacity':        listing_data_cached['person_capacity'],
+            'photo_count':            listing_data_cached['photo_count'],
+            'photos':                 listing_data_cached['photos'],
+            'place_id':               geography['placeId'],
+            'price_rate':             listing_data_cached.get('price_rate'),
+            'price_rate_type':        listing_data_cached.get('price_rate_type'),
+            'province':               geography.get('province'),
+            'rating_accuracy':        logging_data['accuracyRating'],
+            'rating_checkin':         logging_data['checkinRating'],
+            'rating_cleanliness':     logging_data['cleanlinessRating'],
+            'rating_communication':   logging_data['communicationRating'],
+            'rating_location':        logging_data['locationRating'],
+            'rating_value':           logging_data['valueRating'],
+            'review_count':           listing_data_cached['review_count'],
+            'reviews':                reviews,
+            'room_and_property_type': listing_data_cached['room_and_property_type'],
+            'room_type':              listing_data_cached['room_type'],
+            'room_type_category':     listing_data_cached['room_type_category'],
+            'satisfaction_guest':     logging_data['guestSatisfactionOverall'],
+            'star_rating':            listing_data_cached['star_rating'],
+            'state':                  geography['state'],
+            'total_price':            listing_data_cached.get('total_price'),
+            'url':                    "https://www.airbnb.com/rooms/{}".format(listing_id),
+            'weekly_price_factor':    listing_data_cached.get('weekly_price_factor')
+        }
 
         self.__get_detail_property(
             item, 'transit', 'Getting around', section_data['location'].get('seeAllLocationDetails'), 'content')
