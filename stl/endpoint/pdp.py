@@ -1,11 +1,11 @@
 import json
-from logging import Logger
-
 import lxml.html
 import re
 import requests
 
 from datetime import datetime
+from logging import Logger
+from time import sleep
 
 from stl.endpoint.base_endpoint import BaseEndpoint
 
@@ -74,10 +74,19 @@ class Pdp(BaseEndpoint):
 
     @staticmethod
     def get_product_id(listing_id: str) -> str:
+        max_attempts = 3
         url = BaseEndpoint.build_airbnb_url('/rooms/{}'.format(listing_id))
-        response = requests.get(url)
-        doc = lxml.html.fromstring(response.text)
-        result = doc.xpath('//script[@id="data-state"]')
+        attempts = 0
+        result = None
+        while attempts < max_attempts:
+            attempts += 1
+            response = requests.get(url)
+            doc = lxml.html.fromstring(response.text)
+            result = doc.xpath('//script[@id="data-state"]')
+            if result:
+                break
+            sleep(60)
+
         if not result:
             raise RuntimeError('Could not get product id: {}'.format(result))
 
