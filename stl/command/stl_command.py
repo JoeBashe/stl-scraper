@@ -49,7 +49,7 @@ Arguments:
         elif args.get('calendar'):
             persistence = StlCommand.__create_persistence(config, project_path)
             scraper = StlCommand.__create_scraper('calendar', persistence, config, currency, logger)
-            source = args['<source>']
+            source = args['<listingSource>']
             scraper.run(source)
         elif args.get('data'):
             api_key = config['airbnb']['api_key']
