@@ -237,23 +237,25 @@ class Pdp(BaseEndpoint):
         else:
             amenities_access = amenities_avail = []
 
-        # Structure data
-        policies = []
+        # Collect house rules
+        house_rules = []
         listing_expectations = None
         if section_data.get('policies'):
             listing_expectations = self.__render_titles(section_data['policies']['listingExpectations'])
             if section_data['policies'].get('houseRules'):
-                policies = [r['title'] for r in section_data['policies']['houseRules']]
+                house_rules = [r['title'] for r in section_data['policies']['houseRules']]
 
+        # Convert description to plaintext if it exists
         description = ''
         if section_data.get('description') and section_data['description'].get('htmlDescription'):
             description = self.__html_to_text(section_data['description']['htmlDescription']['htmlText'])
 
+        # Structure data
         item = {
             'id':                     listing_id,
             'access':                 self.__render_titles(amenities_access[0]) if amenities_access else None,
             'additional_house_rules': section_data['policies'].get('additionalHouseRules'),
-            'allows_events':          'No parties or events' in policies,
+            'allows_events':          'No parties or events' in house_rules,
             'amenities':              self.__render_titles(amenities_avail, sep=' - ', join=False),
             'amenity_ids':            list(self.__get_amenity_ids(amenities_avail)),
             'avg_rating':             listing_data_cached['avg_rating'],
@@ -267,7 +269,7 @@ class Pdp(BaseEndpoint):
             'country':                geography['country'],
             'description':            description,
             'host_id':                listing_data_cached['host_id'],
-            'house_rules':            [r['title'] for r in section_data['policies'].get('houseRules', [])],
+            'house_rules':            house_rules,
             'is_hotel':               metadata['bookingPrefetchData']['isHotelRatePlanEnabled'],
             'latitude':               listing_data_cached['latitude'],
             'listing_expectations':   listing_expectations,
@@ -303,6 +305,7 @@ class Pdp(BaseEndpoint):
 
         self.__get_detail_property(
             item, 'transit', 'Getting around', section_data['location'].get('seeAllLocationDetails'), 'content')
+
         if section_data.get('host_profile'):
             self.__get_detail_property(
                 item, 'interaction', 'During your stay', section_data['host_profile'].get('hostInfos'), 'html')
