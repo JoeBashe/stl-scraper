@@ -80,6 +80,7 @@ Arguments:
             currency: str,
             logger: Logger
     ) -> AirbnbScraperInterface:
+        """Create scraper of given type using given parameters."""
         api_key = config['airbnb']['api_key']
         if scraper_type == 'search':
             explore = Explore(api_key, currency, logger)
@@ -95,7 +96,7 @@ Arguments:
 
     @staticmethod
     def __create_persistence(config: ConfigParser, project_path: str = None, query: str = None) -> PersistenceInterface:
-        # config persistence layer
+        """Create persistence layer - either CSV or Elasticsearch."""
         storage_type = config['storage']['type']
         if storage_type == 'elasticsearch':
             es_cfg = config['elasticsearch']
@@ -112,6 +113,7 @@ Arguments:
 
     @staticmethod
     def __get_logger() -> Logger:
+        """Configure and get logger instance."""
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s [%(levelname)s] %(message)s",
@@ -121,6 +123,7 @@ Arguments:
 
     @staticmethod
     def __get_search_params(args, config) -> dict:
+        """Get search parameters (currently only 'roomTypes')."""
         params = {}
         room_types = StlCommand.__get_list_arg(args, config, 'roomTypes')
         if room_types:
