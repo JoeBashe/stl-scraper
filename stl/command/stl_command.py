@@ -52,13 +52,13 @@ Arguments:
             scraper.run(source)
         elif args.get('data'):
             api_key = config['airbnb']['api_key']
-            pdp = Pdp(api_key, currency)
+            pdp = Pdp(api_key, currency, logger)
             print(pdp.get_raw_listing(args.get('<listingId>')))
         elif args.get('pricing'):
             listing_id = args.get('<listingId>')
             checkin = args.get('<checkin>')
             checkout = args.get('<checkout>')
-            pricing = Pricing(config['airbnb']['api_key'], currency)
+            pricing = Pricing(config['airbnb']['api_key'], currency, logger)
             total = pricing.get_pricing(checkin, config, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
         else:
@@ -91,13 +91,13 @@ Arguments:
         # create scraper
         api_key = config['airbnb']['api_key']
         if scraper_type == 'search':
-            explore = Explore(api_key, currency)
-            pdp = Pdp(api_key, currency)
-            reviews = Reviews(api_key, currency)
+            explore = Explore(api_key, currency, logger)
+            pdp = Pdp(api_key, currency, logger)
+            reviews = Reviews(api_key, currency, logger)
             return AirbnbSearchScraper(explore, pdp, reviews, persistence, logger)
         elif scraper_type == 'calendar':
-            pricing = Pricing(api_key, currency)
-            calendar = Calendar(api_key, currency, pricing, logger)
+            pricing = Pricing(api_key, currency, logger)
+            calendar = Calendar(api_key, currency, logger, pricing)
             return AirbnbCalendarScraper(calendar, persistence, logger)
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)

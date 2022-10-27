@@ -120,9 +120,8 @@ class Pricing(BaseEndpoint):
 class Calendar(BaseEndpoint):
     N_MONTHS = 12  # number of months of data to return; 12 months == 1 year
 
-    def __init__(self, api_key: str, currency: str, pricing: Pricing, logger: Logger):
-        super().__init__(api_key, currency)
-        self.__logger = logger
+    def __init__(self, api_key: str, currency: str, logger: Logger, pricing: Pricing):
+        super().__init__(api_key, currency, logger)
         self.__pricing = pricing
         self.__today = datetime.today()
 
@@ -181,10 +180,10 @@ class Calendar(BaseEndpoint):
                 try:
                     pd = self.__pricing.get_pricing(start_time, end_time, listing_id)
                 except ValueError as ve:
-                    self.__logger.error('Could not get pricing data for "{}": {}'.format(listing_id, str(ve)))
+                    self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(ve)))
                     continue
             if not pd:
-                self.__logger.warning('{}: Unable to find available {} day range'.format(listing_id, test_length))
+                self._logger.warning('{}: Unable to find available {} day range'.format(listing_id, test_length))
                 continue
             pricing_data[test_length] = pd
 

@@ -1,4 +1,6 @@
 import json
+from logging import Logger
+
 import lxml.html
 import re
 import requests
@@ -66,8 +68,8 @@ class Pdp(BaseEndpoint):
 
     SECTION_NAMES = ['amenities', 'description', 'host_profile', 'location', 'policies']
 
-    def __init__(self, api_key: str, currency: str):
-        super().__init__(api_key, currency)
+    def __init__(self, api_key: str, currency: str, logger: Logger):
+        super().__init__(api_key, currency, logger)
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
     @staticmethod
