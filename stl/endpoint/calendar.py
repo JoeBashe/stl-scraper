@@ -14,7 +14,7 @@ class Pricing(BaseEndpoint):
     API_PATH = '/api/v3/startStaysCheckout'
 
     def get_pricing(self, checkin: str, checkout: str, listing_id: str) -> dict:
-        """Get total price for a listing for specific dates."""
+        """Get pricing object for a listing for specific dates."""
         # Get raw price data
         product_id = Pdp.get_product_id(listing_id)
         rates = self.get_rates(product_id, checkin, checkout)
