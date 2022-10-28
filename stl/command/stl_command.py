@@ -4,6 +4,7 @@ import sys
 
 from configparser import ConfigParser
 from elasticsearch import Elasticsearch
+from elastic_transport import ConnectionError
 from logging import Logger
 
 from stl.endpoint.calendar import Calendar, Pricing
@@ -34,32 +35,43 @@ Arguments:
     <source>        - Only allows "airbnb" for now. (default: "airbnb")
 """
 
+    def __init__(self):
+        self.__logger = StlCommand.__get_logger()
+
     @staticmethod
-    def execute(args: dict):
-        logger = StlCommand.__get_logger()
+    def __get_logger(level: int = logging.WARNING) -> Logger:
+        """Configure and get logger instance."""
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            handlers=[logging.StreamHandler(sys.stdout)]
+        )
+        return logging.getLogger(__class__.__module__.lower())
+
+    def execute(self, args: dict):
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
         config = StlCommand.__config(project_path)
         currency = args.get('--currency') or config['search'].get('currency', 'USD')
         if args.get('search'):
             query = args['<query>']
-            persistence = StlCommand.__create_persistence(config, project_path, query)
-            scraper = StlCommand.__create_scraper('search', persistence, config, currency, logger)
+            persistence = self.__create_persistence(config, project_path, query)
+            scraper = self.__create_scraper('search', persistence, config, currency)
             params = StlCommand.__get_search_params(args, config)
             scraper.run(query, params)
         elif args.get('calendar'):
-            persistence = StlCommand.__create_persistence(config, project_path)
-            scraper = StlCommand.__create_scraper('calendar', persistence, config, currency, logger)
+            persistence = self.__create_persistence(config, project_path)
+            scraper = self.__create_scraper('calendar', persistence, config, currency)
             source = args['<listingSource>']
             scraper.run(source)
         elif args.get('data'):
             api_key = config['airbnb']['api_key']
-            pdp = Pdp(api_key, currency, logger)
+            pdp = Pdp(api_key, currency, self.__logger)
             print(pdp.get_raw_listing(args.get('<listingId>')))
         elif args.get('pricing'):
             listing_id = args.get('<listingId>')
             checkin = args.get('<checkin>')
             checkout = args.get('<checkout>')
-            pricing = Pricing(config['airbnb']['api_key'], currency, logger)
+            pricing = Pricing(config['airbnb']['api_key'], currency, self.__logger)
             total = pricing.get_pricing(checkin, config, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
         else:
@@ -72,30 +84,29 @@ Arguments:
         config.read(os.path.join(project_path, 'stl.ini'))
         return config
 
-    @staticmethod
     def __create_scraper(
+            self,
             scraper_type: str,
             persistence: PersistenceInterface,
             config: ConfigParser,
-            currency: str,
-            logger: Logger
+            currency: str
     ) -> AirbnbScraperInterface:
         """Create scraper of given type using given parameters."""
         api_key = config['airbnb']['api_key']
         if scraper_type == 'search':
-            explore = Explore(api_key, currency, logger)
-            pdp = Pdp(api_key, currency, logger)
-            reviews = Reviews(api_key, currency, logger)
-            return AirbnbSearchScraper(explore, pdp, reviews, persistence, logger)
+            explore = Explore(api_key, currency, self.__logger)
+            pdp = Pdp(api_key, currency, self.__logger)
+            reviews = Reviews(api_key, currency, self.__logger)
+            return AirbnbSearchScraper(explore, pdp, reviews, persistence, self.__logger)
         elif scraper_type == 'calendar':
-            pricing = Pricing(api_key, currency, logger)
-            calendar = Calendar(api_key, currency, logger, pricing)
-            return AirbnbCalendarScraper(calendar, persistence, logger)
+            pricing = Pricing(api_key, currency, self.__logger)
+            calendar = Calendar(api_key, currency, self.__logger, pricing)
+            return AirbnbCalendarScraper(calendar, persistence, self.__logger)
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)
 
-    @staticmethod
-    def __create_persistence(config: ConfigParser, project_path: str = None, query: str = None) -> PersistenceInterface:
+    def __create_persistence(
+            self, config: ConfigParser, project_path: str = None, query: str = None) -> PersistenceInterface:
         """Create persistence layer - either CSV or Elasticsearch."""
         storage_type = config['storage']['type']
         if storage_type == 'elasticsearch':
@@ -104,22 +115,16 @@ Arguments:
                 Elasticsearch(hosts=es_cfg['hosts'], basic_auth=(es_cfg['username'], es_cfg['password'])),
                 config['elasticsearch']['index']
             )
-            persistence.create_index_if_not_exists(config['elasticsearch']['index'])
+            try:
+                persistence.create_index_if_not_exists(config['elasticsearch']['index'])
+            except ConnectionError as e:
+                self.__logger.critical(e.message + '\nCould not connect to elasticsearch.')
+                exit(1)
         else:
             csv_path = os.path.join(project_path, '{}.csv'.format(query))
             persistence = Csv(csv_path)
 
         return persistence
-
-    @staticmethod
-    def __get_logger() -> Logger:
-        """Configure and get logger instance."""
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            handlers=[logging.StreamHandler(sys.stdout)]
-        )
-        return logging.getLogger(__class__.__module__.lower())
 
     @staticmethod
     def __get_search_params(args, config) -> dict:
