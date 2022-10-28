@@ -158,24 +158,35 @@ class Elastic(PersistenceInterface):
         if exists_booking_field.body['hits']['hits']:
             script = {
                 "source": """
-                    for (int i = 0; i < params.bookings; i++) {
-                        def booking = params.bookings[i];
+                    def updated = false;
+                    for (booking in params.bookings) {
                         if (!ctx._source.bookings.contains(booking)) {
                             ctx._source.bookings.add(booking);
+                            updated = true;
                         }
                     }
+                    if (updated) {
+                        // sort bookings
+                        ctx._source.bookings.sort((a,b) -> a.date == b.date 
+                            ? 0 
+                            : ZonedDateTime.parse(a.date + "T00:00:00Z").isBefore(ZonedDateTime.parse(b.date + "T00:00:00Z"))
+                                ? -1 
+                                : 1
+                        );
+                    }
+                    // mark updated because we "touched" this listing
                     ctx._source.updated_at = params.now;
                 """,
                 "params": {
                     "bookings": bookings,
-                    "now":      datetime.now()
+                    "now":      datetime.utcnow()
                 }
             }
             self.__es.update(index=self.__index, id=listing_id, script=script)
         else:
             self.__es.update(index=self.__index, id=listing_id, doc={
                 'bookings':   bookings,
-                'updated_at': datetime.now()
+                'updated_at': datetime.utcnow()
             })
 
     def update_pricing(self, listing_id: str, pricing: dict, min_nights: int = None, max_nights: int = None):
