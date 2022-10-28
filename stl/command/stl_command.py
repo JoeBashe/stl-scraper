@@ -58,15 +58,18 @@ Arguments:
             scraper = self.__create_scraper('search', persistence, config, currency)
             params = StlCommand.__get_search_params(args, config)
             scraper.run(query, params)
+
         elif args.get('calendar'):
             persistence = self.__create_persistence(config, project_path)
             scraper = self.__create_scraper('calendar', persistence, config, currency)
             source = args['<listingSource>']
             scraper.run(source)
+
         elif args.get('data'):
             api_key = config['airbnb']['api_key']
             pdp = Pdp(api_key, currency, self.__logger)
             print(pdp.get_raw_listing(args.get('<listingId>')))
+
         elif args.get('pricing'):
             listing_id = args.get('<listingId>')
             checkin = args.get('<checkin>')
@@ -74,6 +77,7 @@ Arguments:
             pricing = Pricing(config['airbnb']['api_key'], currency, self.__logger)
             total = pricing.get_pricing(checkin, config, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
+
         else:
             raise RuntimeError('ERROR: Unexpected command:\n{}'.format(*args))
 
