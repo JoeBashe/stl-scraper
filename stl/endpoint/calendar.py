@@ -180,8 +180,8 @@ class Calendar(BaseEndpoint):
                 end_time = (test_range['start'] + timedelta(days=test_length)).strftime('%Y-%m-%d')
                 try:
                     pd = self.__pricing.get_pricing(start_time, end_time, listing_id)
-                except ValueError as ve:
-                    self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(ve)))
+                except (ValueError, RuntimeError) as e:
+                    self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(e)))
                     continue
             if not pd:
                 self._logger.warning('{}: Unable to find available {} day range'.format(listing_id, test_length))
