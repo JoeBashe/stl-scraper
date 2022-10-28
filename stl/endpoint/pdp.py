@@ -105,7 +105,7 @@ class Pdp(BaseEndpoint):
         response = self.get_raw_listing(listing_id)
         return self.__parse_listing_contents(response, data_cache[listing_id], geography, reviews) | {
             'product_id': product_id,
-            'source':     'airbnb',
+            'source':     self.SOURCE,
             'updated_at': datetime.utcnow(),
         }
 
