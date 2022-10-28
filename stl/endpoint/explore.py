@@ -2,8 +2,9 @@ from stl.endpoint.base_endpoint import BaseEndpoint
 
 
 class Explore(BaseEndpoint):
+    API_PATH = '/api/v3/ExploreSearch'
+
     def get_url(self, search_string: str, params: dict = None):
-        _api_path = '/api/v3/ExploreSearch'
         query = {
             'operationName': 'ExploreSearch',
             'locale':        self._locale,
@@ -43,7 +44,7 @@ class Explore(BaseEndpoint):
 
         self._put_json_param_strings(data)
 
-        url = self.build_airbnb_url(_api_path, query)
+        url = BaseEndpoint.build_airbnb_url(self.API_PATH, query)
         url += '&variables=%s' % data['variables']
         url += '&extensions=%s' % data['extensions']
 

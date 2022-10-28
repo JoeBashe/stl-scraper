@@ -11,6 +11,7 @@ from stl.exception.api import ApiException, ForbiddenException
 
 
 class BaseEndpoint(ABC):
+    API_PATH = None
     SOURCE = 'airbnb'
 
     def __init__(self, api_key: str, currency: str, logger: Logger, locale: str = 'en'):

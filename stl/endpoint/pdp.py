@@ -11,6 +11,8 @@ from stl.endpoint.base_endpoint import BaseEndpoint
 
 
 class Pdp(BaseEndpoint):
+    API_PATH = '/api/v3/PdpPlatformSections'
+
     AMENITIES = {
         1:    'tv',
         4:    'wifi',
@@ -164,7 +166,6 @@ class Pdp(BaseEndpoint):
             }
 
     def __get_url(self, listing_id: str):
-        _api_path = '/api/v3/PdpPlatformSections'
         query = {
             'operationName': 'PdpPlatformSections',
             'locale':        self._locale,
@@ -215,7 +216,7 @@ class Pdp(BaseEndpoint):
 
         self._put_json_param_strings(data)
 
-        url = self.build_airbnb_url(_api_path, query)
+        url = BaseEndpoint.build_airbnb_url(self.API_PATH, query)
         url += '&variables=%s' % data['variables']
         url += '&extensions=%s' % data['extensions']
 

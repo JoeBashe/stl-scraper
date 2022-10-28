@@ -11,6 +11,7 @@ from stl.endpoint.pdp import Pdp
 
 
 class Pricing(BaseEndpoint):
+    API_PATH = '/api/v3/startStaysCheckout'
 
     def get_pricing(self, checkin: str, checkout: str, listing_id: str) -> dict:
         """Get total price for a listing for specific dates."""
@@ -73,8 +74,7 @@ class Pricing(BaseEndpoint):
         return pricing
 
     def get_rates(self, product_id: str, start_date: str, end_date: str):
-        _api_path = '/api/v3/startStaysCheckout'
-        url = self.build_airbnb_url(_api_path, {
+        url = BaseEndpoint.build_airbnb_url(self.API_PATH, {
             'operationName': 'startStaysCheckout',
             'locale':        self._locale,
             'currency':      self._currency
@@ -118,6 +118,7 @@ class Pricing(BaseEndpoint):
 
 
 class Calendar(BaseEndpoint):
+    API_PATH = '/api/v3/PdpAvailabilityCalendar'
     N_MONTHS = 12  # number of months of data to return; 12 months == 1 year
 
     def __init__(self, api_key: str, currency: str, logger: Logger, pricing: Pricing):
@@ -206,7 +207,6 @@ class Calendar(BaseEndpoint):
 
     def get_url(self, listing_id: str) -> str:
         """Get PdpAvailabilityCalendar URL."""
-        _api_path = '/api/v3/PdpAvailabilityCalendar'
         query = {
             'operationName': 'PdpAvailabilityCalendar',
             'locale':        self._locale,
@@ -228,7 +228,7 @@ class Calendar(BaseEndpoint):
         }
         self._put_json_param_strings(query)
 
-        return self.build_airbnb_url(_api_path, query)
+        return BaseEndpoint.build_airbnb_url(self.API_PATH, query)
 
     @staticmethod
     def __get_test_lengths(max_nights, min_nights) -> list:

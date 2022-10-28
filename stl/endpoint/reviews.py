@@ -5,22 +5,24 @@ from stl.endpoint.base_endpoint import BaseEndpoint
 
 
 class Reviews(BaseEndpoint):
+    API_PATH = '/api/v3/PdpReviews'
+
     def get_reviews(self, listing_id: str, limit: int = 50, start_offset: int = 0):
         """Perform API request."""
         # get first batch of reviews
-        reviews, n_reviews_total = self._get_reviews_batch(listing_id, limit, start_offset)
+        reviews, n_reviews_total = self.__get_reviews_batch(listing_id, limit, start_offset)
 
         # get any additional batches
         start_idx = start_offset + limit
         for offset in range(start_idx, n_reviews_total, limit):
-            r, _ = self._get_reviews_batch(listing_id, limit, offset)
+            r, _ = self.__get_reviews_batch(listing_id, limit, offset)
             reviews.extend(r)
 
         return reviews
 
-    def _get_reviews_batch(self, listing_id: str, limit: int, offset: int):
+    def __get_reviews_batch(self, listing_id: str, limit: int, offset: int):
         """Get reviews for a given listing ID in batches."""
-        url = self.get_url(listing_id, limit, offset)
+        url = self.__get_url(listing_id, limit, offset)
         headers = {'x-airbnb-api-key': self._api_key}
         response = requests.get(url, headers=headers)
         data = json.loads(response.text)
@@ -39,8 +41,7 @@ class Reviews(BaseEndpoint):
 
         return reviews, n_reviews_total
 
-    def get_url(self, listing_id: str, limit: int = 7, offset: int = None) -> str:
-        _api_path = '/api/v3/PdpReviews'
+    def __get_url(self, listing_id: str, limit: int = 7, offset: int = None) -> str:
         query = {
             'operationName': 'PdpReviews',
             'locale':        self._locale,
@@ -68,4 +69,4 @@ class Reviews(BaseEndpoint):
 
         self._put_json_param_strings(query)
 
-        return self.build_airbnb_url(_api_path, query)
+        return BaseEndpoint.build_airbnb_url(self.API_PATH, query)
