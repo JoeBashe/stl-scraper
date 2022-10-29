@@ -119,7 +119,7 @@ class Elastic(PersistenceInterface):
         hits = scan(
             self.__es,
             query=query,
-            scroll='1m',
+            scroll='2m',
             index=self.__index
         )
         return (hit['_id'] for hit in hits)
