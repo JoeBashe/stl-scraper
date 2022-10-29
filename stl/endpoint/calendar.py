@@ -23,57 +23,12 @@ class Pricing(BaseEndpoint):
         sections = rates['data']['startStayCheckoutFlow']['stayCheckout']['sections']
         if not (sections['temporaryQuickPayData'] and sections['temporaryQuickPayData']['bootstrapPaymentsJSON']):
             raise ValueError('Error retrieving pricing: {}'.format(sections['metadata']['errorData']['errorMessage']))
+
         quickpay_data = json.loads(sections['temporaryQuickPayData']['bootstrapPaymentsJSON'])
-        price_breakdown = quickpay_data['productPriceBreakdown']['priceBreakdown']
-        price_items = price_breakdown['priceItems']
-        nights = (datetime.strptime(checkout, '%Y-%m-%d') - datetime.strptime(checkin, '%Y-%m-%d')).days
-
-        if len(price_items) > 5:
-            raise ValueError(
-                'Unexpected extra section types:\n{}'.format(', '.join([pi['type'] for pi in price_items])))
-
-        # Parse price line items
-        items = {}
-        for type_name in ['ACCOMMODATION', 'AIRBNB_GUEST_FEE', 'CLEANING_FEE', 'DISCOUNT', 'TAXES']:
-            type_items = [i for i in price_items if i['type'] == type_name]
-            if not type_items:
-                if type_name not in ['CLEANING_FEE', 'DISCOUNT', 'TAXES']:
-                    raise ValueError('Unexpected missing section type: %s' % type_name)
-                continue  # Missing CLEANING_FEE, DISCOUNT or TAXES is ok
-            if len(type_items) > 1:
-                raise ValueError('Unexpected multiple section type: %s' % type_name)
-            items[type_name] = type_items.pop()
-
-        # Create normalized pricing object
-        price_accommodation = items['ACCOMMODATION']['total']['amountMicros'] / 1000000
-        taxes = items['TAXES']['total']['amountMicros'] / 1000000 if items.get('TAXES') else 0
-        cleaning_fee = items['CLEANING_FEE']['total']['amountMicros'] / 1000000 if items.get('CLEANING_FEE') else 0
-        pricing = {
-            'nights':              nights,
-            'price_nightly':       price_accommodation / nights,
-            'price_accommodation': price_accommodation,
-            'price_cleaning':      cleaning_fee,
-            'taxes':               taxes,
-            'airbnb_fee':          items['AIRBNB_GUEST_FEE']['total']['amountMicros'] / 1000000,
-            'total':               price_breakdown['total']['total']['amountMicros'] / 1000000,
-        }
-
-        if items.get('DISCOUNT'):
-            discount = -1 * (items['DISCOUNT']['total']['amountMicros'] / 1000000)
-            pricing['discount'] = discount
-            pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'] - discount)
-            if 'Weekly discount' == items['DISCOUNT']['localizedTitle']:
-                pricing['discount_monthly'] = None
-                pricing['discount_weekly'] = discount / price_accommodation
-            elif 'Monthly discount' == items['DISCOUNT']['localizedTitle']:
-                pricing['discount_monthly'] = discount / price_accommodation
-                pricing['discount_weekly'] = None
-            else:
-                raise ValueError('Unhandled discount type: %s' % items['DISCOUNT']['localizedTitle'])
-        else:
-            pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'])
-
-        return pricing
+        return self.__normalize_pricing(
+            quickpay_data['productPriceBreakdown']['priceBreakdown'],
+            (datetime.strptime(checkout, '%Y-%m-%d') - datetime.strptime(checkin, '%Y-%m-%d')).days
+        )
 
     def get_rates(self, product_id: str, start_date: str, end_date: str):
         url = BaseEndpoint.build_airbnb_url(self.API_PATH, {
@@ -117,6 +72,61 @@ class Pricing(BaseEndpoint):
             }
         })
         return self._api_request(url, 'POST', payload)
+
+    @staticmethod
+    def __normalize_pricing(price_breakdown: dict, nights: int):
+        """Normalize price line items. Throw ValueError if price data malformed."""
+        price_items = price_breakdown['priceItems']
+        if len(price_items) > 5:
+            raise ValueError(
+                'Unexpected extra section types:\n{}'.format(', '.join([pi['type'] for pi in price_items])))
+
+        items = {}
+        for type_name in ['ACCOMMODATION', 'AIRBNB_GUEST_FEE', 'CLEANING_FEE', 'DISCOUNT', 'TAXES']:
+            type_items = [i for i in price_items if i['type'] == type_name]
+            if not type_items:
+                if type_name == 'ACCOMMODATION':
+                    raise ValueError('No ACCOMMODATION pricing found: {}'.format(price_items))
+                else:
+                    continue  # Missing AIRBNB_GUEST_FEE, CLEANING_FEE, DISCOUNT or TAXES is ok
+
+            if len(type_items) > 1:
+                raise ValueError('Unexpected multiple section type: %s' % type_name)
+
+            items[type_name] = type_items.pop()
+
+        # Create normalized pricing object
+        mega = 1_000_000  # one million
+        price_accommodation = items['ACCOMMODATION']['total']['amountMicros'] / mega
+        taxes = items['TAXES']['total']['amountMicros'] / mega if items.get('TAXES') else 0
+        cleaning_fee = items['CLEANING_FEE']['total']['amountMicros'] / mega if items.get('CLEANING_FEE') else 0
+        airbnb_fee = items['AIRBNB_GUEST_FEE']['total']['amountMicros'] / mega if items.get('AIRBNB_GUEST_FEE') else 0
+        pricing = {
+            'nights':              nights,
+            'price_nightly':       price_accommodation / nights,
+            'price_accommodation': price_accommodation,
+            'price_cleaning':      cleaning_fee,
+            'taxes':               taxes,
+            'airbnb_fee':          airbnb_fee,
+            'total':               price_breakdown['total']['total']['amountMicros'] / mega,
+        }
+
+        if items.get('DISCOUNT'):
+            discount = -1 * (items['DISCOUNT']['total']['amountMicros'] / mega)
+            pricing['discount'] = discount
+            pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'] - discount)
+            if 'Weekly discount' == items['DISCOUNT']['localizedTitle']:
+                pricing['discount_monthly'] = None
+                pricing['discount_weekly'] = discount / price_accommodation
+            elif 'Monthly discount' == items['DISCOUNT']['localizedTitle']:
+                pricing['discount_monthly'] = discount / price_accommodation
+                pricing['discount_weekly'] = None
+            else:
+                raise ValueError('Unhandled discount type: %s' % items['DISCOUNT']['localizedTitle'])
+        else:
+            pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'])
+
+        return pricing
 
 
 class Calendar(BaseEndpoint):
@@ -174,6 +184,7 @@ class Calendar(BaseEndpoint):
                 continue
             if test_length < min_nights:
                 continue
+
             possible_ranges = [r for r in ranges if r.get('length') >= test_length]
             pd = None
             while possible_ranges and not pd:
@@ -193,6 +204,7 @@ class Calendar(BaseEndpoint):
             if not pd:
                 self._logger.warning('{}: Unable to find available {} day range'.format(listing_id, test_length))
                 continue
+
             pricing_data[test_length] = pd
 
         if full_data or not pricing_data:
@@ -204,8 +216,10 @@ class Calendar(BaseEndpoint):
             'price_nightly':  test_pricing['price_nightly'],
             'price_cleaning': test_pricing['price_cleaning'],
         }
+
         if pricing_data.get(7) and pricing_data[7].get('discount_weekly'):
             pricing_doc['discount_weekly'] = pricing_data[7]['discount_weekly']
+
         monthly_length = min_nights if min_nights > 28 else 28
         if pricing_data.get(monthly_length) and pricing_data[monthly_length].get('discount_monthly'):
             pricing_doc['discount_monthly'] = pricing_data[monthly_length]['discount_monthly']
@@ -238,7 +252,9 @@ class Calendar(BaseEndpoint):
         return BaseEndpoint.build_airbnb_url(self.API_PATH, query)
 
     @staticmethod
-    def __get_test_lengths(max_nights, min_nights) -> list:
+    def __get_test_lengths(max_nights: int, min_nights: int) -> list:
+        """Generate a list of lengths of stays to be used to determine pricing, based upon listing requirements of
+        max_nights and min_nights."""
         if min_nights > 28:  # monthly only
             return [min_nights]
         elif min_nights >= 7:
