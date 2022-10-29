@@ -90,7 +90,7 @@ class Elastic(PersistenceInterface):
         """Delete a listing by id."""
         self.__es.delete(index=self.__index, id=listing_id)
 
-    def get_all_index_ids(self, since: str = '1d'):
+    def get_all_index_ids(self, since: str):
         """Get all index ids not updated since "since" (default: "1d"), except those marked as deleted."""
         query = {
             "query": {

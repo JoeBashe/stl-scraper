@@ -94,10 +94,10 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
         self.__logger = logger
         self.__persistence = persistence
 
-    def run(self, source: str):
+    def run(self, source: str, since: str):
         if source == 'elasticsearch':
             assert isinstance(self.__persistence, Elastic)
-            for listing_id in self.__persistence.get_all_index_ids():
+            for listing_id in self.__persistence.get_all_index_ids(since):
                 self.__update_calendar_and_pricing(listing_id)
         else:  # source is a listing id
             booking_calendar, min_nights, max_nights = self.__calendar.get_calendar(source)

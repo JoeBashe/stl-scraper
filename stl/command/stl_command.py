@@ -23,7 +23,7 @@ class StlCommand:
 Usage:
     stl.py search <query> [--checkin=<checkin> --checkout=<checkout> [--priceMin=<priceMin>] [--priceMax=<priceMax>]] \
 [--roomTypes=<roomTypes>] [--storage=<storage>] [-v|--verbose]
-    stl.py calendar (<listingId> | --all)
+    stl.py calendar (<listingId> | --all) [--updated=<updated>]
     stl.py pricing <listingId> --checkin=<checkin> --checkout=<checkout>
     stl.py data <listingId>
 
@@ -36,12 +36,13 @@ Options:
     --checkout=<checkout>  Check-out date, e.g. "2023-06-30"
     --priceMin=<priceMin>  Minimum nightly or monthly price
     --priceMax=<priceMax>  Maximum nightly or monthly price
+    --updated=<updated>    Only update listings not updated in given period [default: 1d]
     --all                  Update calendar for all listings (requires Elasticsearch backend)
 
 Global Options:
-    --currency=<currency>  "USD", "EUR", etc. [default: USD]
+    --currency=<currency>  "USD", "EUR", etc. (default: USD)
     --source=<source>      Only allows "airbnb" [default: airbnb]
-    --storage=<storage>    csv or elasticsearch [default: csv]
+    --storage=<storage>    csv or elasticsearch (default: csv)
     -v, --verbose          Verbose logging output
 """
 
@@ -71,10 +72,13 @@ Global Options:
             scraper.run(query, params)
 
         elif self.__args.get('calendar'):
+            if self.__args.get('--all') and self.__args.get('--storage') == 'csv':
+                self.__logger.critical('"csv" storage backend not supported in combination with "--all" option.')
+                exit(1)
             persistence = self.__create_persistence(config, project_path)
             scraper = self.__create_scraper('calendar', persistence, config, currency)
-            source = self.__args['<listingSource>']
-            scraper.run(source)
+            source = 'elasticsearch' if self.__args.get('--all') else self.__args['<listingId>']
+            scraper.run(source, self.__args.get('--updated'))
 
         elif self.__args.get('data'):
             api_key = config['airbnb']['api_key']
