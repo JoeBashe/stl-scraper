@@ -91,27 +91,24 @@ class Elastic(PersistenceInterface):
         self.__es.delete(index=self.__index, id=listing_id)
 
     def get_all_index_ids(self, since: str = '1d'):
-        """Get all index ids, except those marked as deleted."""
+        """Get all index ids not updated since "since" (default: "1d"), except those marked as deleted."""
         query = {
             "query": {
                 "bool": {
-                    "minimum_should_match": 1,
-                    "should":               [
+                    "must_not": [
                         {
-                            "bool": {
-                                "must_not": [
-                                    {
-                                        "term": {
-                                            "deleted": True
-                                        }
-                                    }
-                                ]
+                            "term": {
+                                "deleted": {
+                                    "value": True
+                                }
                             }
-                        },
+                        }
+                    ],
+                    "must":     [
                         {
                             "range": {
                                 "updated_at": {
-                                    "lt": "now-%s" % since
+                                    "lte": "now-{}".format(since)
                                 }
                             }
                         }
