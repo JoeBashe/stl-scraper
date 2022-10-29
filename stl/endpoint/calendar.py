@@ -5,6 +5,8 @@ from datetime import date, datetime, timedelta
 from itertools import groupby
 from logging import Logger
 from operator import itemgetter
+from requests.exceptions import ConnectionError
+from time import sleep
 
 from stl.endpoint.base_endpoint import BaseEndpoint
 from stl.endpoint.pdp import Pdp
@@ -183,6 +185,11 @@ class Calendar(BaseEndpoint):
                 except (ValueError, RuntimeError) as e:
                     self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(e)))
                     continue
+                except ConnectionError as e:
+                    self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(e)))
+                    sleep(60)  # pause for a minute
+                    continue
+
             if not pd:
                 self._logger.warning('{}: Unable to find available {} day range'.format(listing_id, test_length))
                 continue
