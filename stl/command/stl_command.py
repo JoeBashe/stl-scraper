@@ -123,7 +123,7 @@ Global Options:
     def __create_persistence(
             self, config: ConfigParser, project_path: str = None, query: str = None) -> PersistenceInterface:
         """Create persistence layer - either CSV or Elasticsearch."""
-        storage_type = config['storage']['type']
+        storage_type = self.__args.get('--storage') or config['storage']['type']
         if storage_type == 'elasticsearch':
             es_cfg = config['elasticsearch']
             persistence = Elastic(
