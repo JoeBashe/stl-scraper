@@ -90,9 +90,12 @@ class Pdp(BaseEndpoint):
             sleep(60)
 
         if not result:
-            raise RuntimeError('Could not get product id: {}'.format(result))
+            raise RuntimeError('Could not get product id for {}'.format(listing_id))
 
         data_state = json.loads(result[0].text)
+        if len(data_state['niobeMinimalClientData']) == 1:
+            raise RuntimeError('Could not get product id for {}'.format(listing_id))
+
         if data_state['niobeMinimalClientData'][1][1]['variables'].get('id'):
             return data_state['niobeMinimalClientData'][1][1]['variables']['id']
 
@@ -100,7 +103,7 @@ class Pdp(BaseEndpoint):
         if stays_pdp_sections.get('id'):
             return stays_pdp_sections['id']
 
-        raise RuntimeError('Could not get product id')
+        raise RuntimeError('Could not get product id for {}'.format(listing_id))
 
     def get_listing(self, listing_id: str, data_cache: dict, geography: dict, reviews: dict) -> dict:
         product_id = self.get_product_id(listing_id)
