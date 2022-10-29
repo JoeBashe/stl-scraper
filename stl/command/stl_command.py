@@ -21,65 +21,76 @@ class StlCommand:
     """Short-Term Listings (STL) Scraper
 
 Usage:
-    stl.py search <query> [--currency=<currency>] [--roomTypes=<roomTypes>] [--source=<source>]
-    stl.py calendar <listingSource> [--currency=<currency>] [--source=<source>]
-    stl.py pricing <listingId> <checkin> <checkout> [--currency=<currency>] [--source=<source>]
-    stl.py data <listingId> [--source=<source>]
+    stl.py search <query> [--checkin=<checkin> --checkout=<checkout> [--priceMin=<priceMin>] [--priceMax=<priceMax>]] \
+[--roomTypes=<roomTypes>] [--storage=<storage>] [-v|--verbose]
+    stl.py calendar (<listingId> | --all)
+    stl.py pricing <listingId> --checkin=<checkin> --checkout=<checkout>
+    stl.py data <listingId>
 
 Arguments:
-    <query>         - The query string to search (e.g. "San Diego, CA").
-    <currency>      - "USD", "EUR", etc. (default: USD)
-    <listingId>     - The listing id.
-    <roomTypes>     - e.g. "Entire home/apt". Can include multiple separated by comma.
-    <listingSource> - One of either: a. listing ID; or b. the special keyword "elasticsearch".
-    <source>        - Only allows "airbnb" for now. (default: "airbnb")
+    <query>          The query string to search (e.g. "San Diego, CA")
+    <listingId>      The listing id
+
+Options:
+    --checkin=<checkin>    Check-in date, e.g. "2023-06-01"
+    --checkout=<checkout>  Check-out date, e.g. "2023-06-30"
+    --priceMin=<priceMin>  Minimum nightly or monthly price
+    --priceMax=<priceMax>  Maximum nightly or monthly price
+    --all                  Update calendar for all listings (requires Elasticsearch backend)
+
+Global Options:
+    --currency=<currency>  "USD", "EUR", etc. [default: USD]
+    --source=<source>      Only allows "airbnb" [default: airbnb]
+    --storage=<storage>    csv or elasticsearch [default: csv]
+    -v, --verbose          Verbose logging output
 """
 
-    def __init__(self):
-        self.__logger = StlCommand.__get_logger()
+    def __init__(self, args: dict):
+        self.__args = args
+        self.__logger = StlCommand.__get_logger(bool(args.get('--verbose')))
 
     @staticmethod
-    def __get_logger(level: int = logging.WARNING) -> Logger:
+    def __get_logger(is_verbose: bool) -> Logger:
         """Configure and get logger instance."""
         logging.basicConfig(
-            level=level,
+            level=logging.INFO if is_verbose else logging.WARNING,
             format="%(asctime)s [%(levelname)s] %(message)s",
             handlers=[logging.StreamHandler(sys.stdout)]
         )
         return logging.getLogger(__class__.__module__.lower())
 
-    def execute(self, args: dict):
+    def execute(self):
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
         config = StlCommand.__config(project_path)
-        currency = args.get('--currency') or config['search'].get('currency', 'USD')
-        if args.get('search'):
-            query = args['<query>']
+        currency = self.__args.get('--currency') or config['search'].get('currency', 'USD')
+        if self.__args.get('search'):
+            query = self.__args['<query>']
             persistence = self.__create_persistence(config, project_path, query)
             scraper = self.__create_scraper('search', persistence, config, currency)
-            params = StlCommand.__get_search_params(args, config)
+            params = self.__get_search_params(config)
             scraper.run(query, params)
 
-        elif args.get('calendar'):
+        elif self.__args.get('calendar'):
             persistence = self.__create_persistence(config, project_path)
             scraper = self.__create_scraper('calendar', persistence, config, currency)
-            source = args['<listingSource>']
+            source = self.__args['<listingSource>']
             scraper.run(source)
 
-        elif args.get('data'):
+        elif self.__args.get('data'):
             api_key = config['airbnb']['api_key']
             pdp = Pdp(api_key, currency, self.__logger)
-            print(pdp.get_raw_listing(args.get('<listingId>')))
+            print(pdp.get_raw_listing(self.__args.get('<listingId>')))
 
-        elif args.get('pricing'):
-            listing_id = args.get('<listingId>')
-            checkin = args.get('<checkin>')
-            checkout = args.get('<checkout>')
+        elif self.__args.get('pricing'):
+            listing_id = self.__args.get('<listingId>')
+            checkin = self.__args.get('<checkin>')
+            checkout = self.__args.get('<checkout>')
             pricing = Pricing(config['airbnb']['api_key'], currency, self.__logger)
             total = pricing.get_pricing(checkin, config, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
 
         else:
-            raise RuntimeError('ERROR: Unexpected command:\n{}'.format(*args))
+            raise RuntimeError('ERROR: Unexpected command:\n{}'.format(*self.__args))
 
     @staticmethod
     def __config(project_path: str) -> ConfigParser:
@@ -130,20 +141,28 @@ Arguments:
 
         return persistence
 
-    @staticmethod
-    def __get_search_params(args, config) -> dict:
-        """Get search parameters (currently only 'roomTypes')."""
+    def __get_search_params(self, config: ConfigParser) -> dict:
+        """Get search parameters: roomTypes,."""
         params = {}
-        room_types = StlCommand.__get_list_arg(args, config, 'roomTypes')
+        room_types = self.__get_list_arg(config, 'roomTypes')
         if room_types:
             params['roomTypes'] = room_types
 
+        if self.__args.get('--checkin'):
+            params['checkin'] = self.__args['--checkin']
+            params['checkout'] = self.__args['--checkout']
+
+        if self.__args.get('--priceMax'):
+            params['priceMax'] = self.__args['--priceMax']
+
+        if self.__args.get('--priceMin'):
+            params['priceMin'] = self.__args['--priceMin']
+
         return params
 
-    @staticmethod
-    def __get_list_arg(args: dict, config: ConfigParser, arg_name: str) -> list:
+    def __get_list_arg(self, config: ConfigParser, arg_name: str) -> list | None:
         """Get CLI comma-separated list argument, fall back to config."""
-        return list(filter(bool, map(
-            str.strip,
-            str(args.get('--{}'.format(arg_name)) or config['search'].get(arg_name, '')).split(',')
-        )))
+        arg_val = self.__args.get('--{}'.format(arg_name)) or config['search'].get(arg_name, '')
+        if not arg_val:
+            return None
+        return list(filter(bool, map(str.strip, str(arg_val).split(','))))

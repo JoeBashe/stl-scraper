@@ -14,7 +14,7 @@ def main():
         print(de)
         exit(1)
 
-    StlCommand().execute(arguments)
+    StlCommand(arguments).execute()
 
 
 if __name__ == "__main__":
