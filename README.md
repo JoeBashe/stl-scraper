@@ -3,7 +3,7 @@
 Scrape short-term listings providers (Airbnb).
 
 Given a search query, e.g. "San Diego, CA" or "Rome, Italy", search Airbnb inventory and collect data on listings. Save
-results to a CSV file.
+results to a CSV file or Elasticsearch.
 
 ## Usage
 
