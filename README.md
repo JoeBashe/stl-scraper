@@ -21,7 +21,8 @@ results to a CSV file.
 Short-Term Listings (STL) Scraper
 
 Usage:
-    stl.py search <query> [--checkin=<checkin> --checkout=<checkout> [--priceMin=<priceMin>] [--priceMax=<priceMax>]] 
+    stl.py search <query> [--checkin=<checkin> --checkout=<checkout> 
+                  [--priceMin=<priceMin>] [--priceMax=<priceMax>]] 
                   [--roomTypes=<roomTypes>] [--storage=<storage>] [-v|--verbose]
     stl.py calendar (<listingId> | --all)
     stl.py pricing <listingId> --checkin=<checkin> --checkout=<checkout>
