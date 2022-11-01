@@ -198,7 +198,9 @@ class Calendar(BaseEndpoint):
                     continue
                 except ConnectionError as e:
                     self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(e)))
-                    sleep(60)  # pause for a minute
+                    # connection error due to network issues. wait for one minute for network connection to be
+                    # re-established.
+                    sleep(60)
                     continue
 
             if not pd:
