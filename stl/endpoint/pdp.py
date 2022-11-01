@@ -1,11 +1,9 @@
-import json
+import base64
 import lxml.html
 import re
-import requests
 
 from datetime import datetime
 from logging import Logger
-from time import sleep
 
 from stl.endpoint.base_endpoint import BaseEndpoint
 
@@ -76,34 +74,7 @@ class Pdp(BaseEndpoint):
 
     @staticmethod
     def get_product_id(listing_id: str) -> str:
-        max_attempts = 3
-        url = BaseEndpoint.build_airbnb_url('/rooms/{}'.format(listing_id))
-        attempts = 0
-        result = None
-        while attempts < max_attempts:
-            attempts += 1
-            response = requests.get(url)
-            doc = lxml.html.fromstring(response.text)
-            result = doc.xpath('//script[@id="data-state"]')
-            if result:
-                break
-            sleep(60)
-
-        if not result:
-            raise RuntimeError('Could not get product id for {}'.format(listing_id))
-
-        data_state = json.loads(result[0].text)
-        if len(data_state['niobeMinimalClientData']) == 1:
-            raise RuntimeError('Could not get product id for {}'.format(listing_id))
-
-        if data_state['niobeMinimalClientData'][1][1]['variables'].get('id'):
-            return data_state['niobeMinimalClientData'][1][1]['variables']['id']
-
-        stays_pdp_sections = json.loads(data_state['niobeMinimalClientData'][0][0].replace('StaysPdpSections:', ''))
-        if stays_pdp_sections.get('id'):
-            return stays_pdp_sections['id']
-
-        raise RuntimeError('Could not get product id for {}'.format(listing_id))
+        return base64.b64encode(bytes(f'StayListing:{listing_id}', 'utf-8')).decode('utf-8')
 
     def get_listing(self, listing_id: str, data_cache: dict, geography: dict, reviews: dict) -> dict:
         product_id = self.get_product_id(listing_id)
