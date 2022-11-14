@@ -9,7 +9,7 @@ class Csv(PersistenceInterface):
         self.__csv_path = csv_path
 
     def save(self, query: str, listings: list):
-        with open(self.__csv_path, 'w', encoding='utf-8') as csvfile:
+        with open(self.__csv_path, 'w', encoding='utf-8', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=listings[0].keys())
             writer.writeheader()
             writer.writerows(listings)
