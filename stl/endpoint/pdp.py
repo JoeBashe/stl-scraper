@@ -225,7 +225,8 @@ class Pdp(BaseEndpoint):
         house_rules = []
         listing_expectations = None
         if section_data.get('policies'):
-            listing_expectations = self.__render_titles(section_data['policies']['listingExpectations'])
+            if section_data['policies'].get('listingExpectations'):
+                listing_expectations = self.__render_titles(section_data['policies']['listingExpectations'])
             if section_data['policies'].get('houseRules'):
                 house_rules = [r['title'] for r in section_data['policies']['houseRules']]
 
