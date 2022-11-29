@@ -5,7 +5,6 @@ from stl.command.stl_command import StlCommand
 
 
 def main():
-    """CLI entry point."""
     arguments = []
     try:
         # Parse arguments, use file docstring as a parameter definition
