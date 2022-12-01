@@ -318,7 +318,7 @@ class Pdp(BaseEndpoint):
     def __get_price_rate(pricing) -> int | None:
         if pricing:
             price_key = Pdp.__get_price_key(pricing)
-            return int(pricing['structuredStayDisplayPrice']['primaryLine'][price_key].lstrip('$').replace(',', ''))
+            return int(pricing['structuredStayDisplayPrice']['primaryLine'][price_key].lstrip('$').replace(',', '').replace('\xa0USD', ''))
 
         return None
 
@@ -339,6 +339,7 @@ class Pdp(BaseEndpoint):
             price = pricing['structuredStayDisplayPrice']['primaryLine'][price_key]
             amount_match = re.match(r'\$([\w,]+)', price)
 
+        amount_match = ['2', '3']
         if not amount_match:
             raise ValueError('No amount match found for price: %s' % price)
 
