@@ -35,6 +35,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         url = self.__explore.get_url(query, params)
         data, pagination = self.__explore.search(url)
         self.__geography.update(data['data']['dora']['exploreV3']['metadata']['geography'])
+        self.__logger.info('Getting results for "{}"'.format(self.__geography['fullAddress']))
         n_listings = 0
         page = 1
         data_cache = {}
@@ -47,9 +48,10 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                     continue  # skip duplicates
                 self.__ids_seen.add(listing_id)
                 n_listings += 1
-                self.__logger.info('Getting data for listing #{}: {}'.format(n_listings, listing_id))
                 reviews = self.__reviews.get_reviews(listing_id)
-                listings.append(self.__pdp.get_listing(listing_id, data_cache, self.__geography, reviews))
+                listing = self.__pdp.get_listing(listing_id, data_cache, self.__geography, reviews)
+                self.__logger.info('Got data for listing #{}: {} ({})'.format(n_listings, listing_id, listing['city']))
+                listings.append(listing)
 
             self.__add_search_params(params, url)
             items_offset = pagination['itemsOffset']
@@ -144,4 +146,4 @@ class AirbnbCalendarScraper(AirbnbScraperInterface):
         elif response.status_code == 410:  # Gone
             return False
         else:
-            raise RuntimeError('Unhandled response code: {}\n{}'.format(response.status_code, response.json()))
+            raise RuntimeError('Unhandled response code: {}\n{}'.format(response.status_code, response.text))

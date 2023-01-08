@@ -36,7 +36,8 @@ Options:
     --checkout=<checkout>  Check-out date, e.g. "2023-06-30"
     --priceMin=<priceMin>  Minimum nightly or monthly price
     --priceMax=<priceMax>  Maximum nightly or monthly price
-    --updated=<updated>    Only update listings not updated in given period [default: 1d]
+    --updated=<updated>    Only update listings not updated in given period. Prevents updating listings that have been \
+recently updated. [default: 1d]
     --all                  Update calendar for all listings (requires Elasticsearch backend)
 
 Global Options:
@@ -98,7 +99,7 @@ Global Options:
 
     @staticmethod
     def __config(project_path: str) -> ConfigParser:
-        """Config logger, then load and return app config from stl.ini config file."""
+        """Load and return app config from stl.ini config file."""
         config = ConfigParser()
         config.read(os.path.join(project_path, 'stl.ini'))
         return config

@@ -43,7 +43,7 @@ class BaseEndpoint(ABC):
             if not errors:
                 return response_json
 
-            self.__handle_api_error(errors)
+            self.__handle_api_error(url, errors)
 
         raise ApiException(['Could not complete API {} request to "{}"'.format(method, url)])
 
@@ -53,12 +53,13 @@ class BaseEndpoint(ABC):
         query['variables'] = json.dumps(query['variables'], separators=(',', ':'))
         query['extensions'] = json.dumps(query['extensions'], separators=(',', ':'))
 
-    def __handle_api_error(self, errors: list):
+    def __handle_api_error(self, url: str, errors: list):
         error = errors.pop()
         if isinstance(error, dict) and error.get('extensions'):
             if error['extensions'].get('response'):
                 status_code = error['extensions']['response'].get('statusCode')
                 if status_code == 403:
+                    self._logger.critical('403 Forbidden: %s' % url)
                     raise ForbiddenException([error])
                 if status_code >= 500:
                     sleep(60)  # sleep for a minute and then make another attempt

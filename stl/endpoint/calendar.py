@@ -194,6 +194,7 @@ class Calendar(BaseEndpoint):
                 try:
                     pd = self.__pricing.get_pricing(start_time, end_time, listing_id)
                 except (ValueError, RuntimeError) as e:
+                    # ValueError or Response error
                     self._logger.error('{}: Could not get pricing data: {}'.format(listing_id, str(e)))
                     continue
                 except ConnectionError as e:
