@@ -5,15 +5,12 @@ from stl.command.stl_command import StlCommand
 
 
 def main():
-    arguments = []
     try:
-        # Parse arguments, use file docstring as a parameter definition
         arguments = docopt(str(StlCommand.__doc__))
+        StlCommand(arguments).execute()
     except DocoptExit as de:
         print(de)
         exit(1)
-
-    StlCommand(arguments).execute()
 
 
 if __name__ == "__main__":
