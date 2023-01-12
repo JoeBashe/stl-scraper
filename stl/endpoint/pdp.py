@@ -114,7 +114,7 @@ class Pdp(BaseEndpoint):
             'bedrooms':               listing['bedrooms'],
             'beds':                   listing['beds'],
             'business_travel_ready':  listing['isBusinessTravelReady'],
-            'city':                   listing['city'],
+            'city':                   listing['city'].strip(),
             'host_id':                listing['user']['id'],
             'latitude':               listing['lat'],
             'longitude':              listing['lng'],
