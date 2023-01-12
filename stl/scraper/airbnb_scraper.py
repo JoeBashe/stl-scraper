@@ -34,8 +34,10 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         listings = []
         url = self.__explore.get_url(query, params)
         data, pagination = self.__explore.search(url)
-        self.__geography.update(data['data']['dora']['exploreV3']['metadata']['geography'])
-        self.__logger.info('Getting results for "{}"'.format(self.__geography['fullAddress']))
+        self.__geography.update(self.__normalize_geography(data))
+        self.__logger.info('Getting {} results for "{}" - ({})'.format(
+            pagination['totalCount'], self.__geography['fullAddress'], params)
+        )
         n_listings = 0
         page = 1
         data_cache = {}
@@ -50,7 +52,10 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                 n_listings += 1
                 reviews = self.__reviews.get_reviews(listing_id)
                 listing = self.__pdp.get_listing(listing_id, data_cache, self.__geography, reviews)
-                self.__logger.info('Got data for listing #{}: {} ({})'.format(n_listings, listing_id, listing['city']))
+                self.__logger.info(
+                    'Listing #{}: {} ({}, ${}/{})'.format(
+                        n_listings, listing_id, listing['city'], listing['price_rate'], listing['price_rate_type']
+                    ))
                 listings.append(listing)
 
             self.__add_search_params(params, url)
@@ -88,6 +93,14 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
 
         if 'sw_lng' in parsed_qs:
             params['sw_lng'] = parsed_qs['sw_lng'][0]
+
+    @staticmethod
+    def __normalize_geography(data: dict):
+        """Get and clean geography metadata."""
+        return {
+            k: (v.strip() if isinstance(v, str) else v)
+            for k, v in data['data']['dora']['exploreV3']['metadata']['geography'].items()
+        }
 
 
 class AirbnbCalendarScraper(AirbnbScraperInterface):
