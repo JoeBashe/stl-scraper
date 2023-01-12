@@ -131,16 +131,21 @@ Global Options:
         storage_type = self.__args.get('--storage') or config['storage']['type']
         if storage_type == 'elasticsearch':
             es_cfg = config['elasticsearch']
-            persistence = Elastic(
-                Elasticsearch(hosts=es_cfg['hosts'], basic_auth=(es_cfg['username'], es_cfg['password'])),
-                config['elasticsearch']['index']
-            )
+            es_params = {
+                'hosts': es_cfg['hosts'],
+                'basic_auth': (es_cfg['username'], es_cfg['password']),
+            }
+            if es_cfg['ca_cert']:
+                es_params['ca_certs'] = es_cfg['ca_cert']
+            else:
+                es_params['verify_certs'] = False
+            persistence = Elastic(Elasticsearch(**es_params), config['elasticsearch']['index'])
             try:
                 persistence.create_index_if_not_exists(config['elasticsearch']['index'])
             except ConnectionError as e:
                 self.__logger.critical(e.message + '\nCould not connect to elasticsearch.')
                 exit(1)
-        else:
+        else: # assume csv
             csv_path = os.path.join(project_path, '{}.csv'.format(query))
             persistence = Csv(csv_path)
 
