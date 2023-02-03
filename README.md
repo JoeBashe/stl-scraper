@@ -77,6 +77,9 @@ docker compose up -d
 # Install project requirements
 docker compose exec jupyter-scipy-notebook bash -c 'cd work && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt'
 
+# NOTE: Edit hosts in [elasticsearch] section of stl.ini:
+# hosts = https://es01:9200
+
 # Run stl.py from host command line
 docker compose exec jupyter-scipy-notebook work/.venv/bin/python /home/jovyan/work/stl.py search -v "Madrid, Spain"
 ```
