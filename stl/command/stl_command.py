@@ -56,7 +56,7 @@ Global Options:
         """Configure and get logger instance."""
         logging.basicConfig(
             level=logging.INFO if is_verbose else logging.WARNING,
-            format="%(asctime)s [%(levelname)s] %(message)s",
+            format='%(asctime)s [%(levelname)s] %(message)s',
             handlers=[logging.StreamHandler(sys.stdout)]
         )
         return logging.getLogger(__class__.__module__.lower())
@@ -132,7 +132,7 @@ Global Options:
         if storage_type == 'elasticsearch':
             es_cfg = config['elasticsearch']
             es_params = {
-                'hosts': es_cfg['hosts'],
+                'hosts':      es_cfg['hosts'],
                 'basic_auth': (es_cfg['username'], es_cfg['password']),
             }
             if es_cfg['ca_cert']:
@@ -145,7 +145,7 @@ Global Options:
             except ConnectionError as e:
                 self.__logger.critical(e.message + '\nCould not connect to elasticsearch.')
                 exit(1)
-        else: # assume csv
+        else:  # assume csv
             csv_path = os.path.join(project_path, '{}.csv'.format(query))
             persistence = Csv(csv_path)
 
