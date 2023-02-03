@@ -9,7 +9,7 @@ results to a CSV file or Elasticsearch.
 
 ```shell
 # activate the virtual env
-. env/bin/activate
+. .venv/bin/activate
 
 # run the script
 ./stl.py search "Madrid, Spain"
@@ -58,10 +58,10 @@ Clone the repo, then:
 cp stl.ini.dist stl.ini
 
 # create the virtual env
-python3 -m venv env
+python3 -m venv .venv
 
 # activate the virtual env
-. env/bin/activate
+. .venv/bin/activate
 
 # install dependencies in virtual env
 pip install -r requirements.txt

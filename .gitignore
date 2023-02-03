@@ -1,5 +1,5 @@
 __pycache__
 /.idea
-/env
+/.venv
 *.csv
 stl.ini
