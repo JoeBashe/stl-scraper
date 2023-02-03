@@ -51,11 +51,12 @@ Global Options:
 
 ## Installation
 
-Clone the repo, then:
+### Installation via pip
 
 ```shell
-# create the config file
+# create the config files
 cp stl.ini.dist stl.ini
+cp .env.dist .env
 
 # create the virtual env
 python3 -m venv .venv
@@ -66,3 +67,27 @@ python3 -m venv .venv
 # install dependencies in virtual env
 pip install -r requirements.txt
 ```
+
+### Installation via docker-compose
+
+```shell
+# Create the containers
+docker compose up -d
+
+# Install project requirements
+docker compose exec jupyter-scipy-notebook bash -c 'cd work && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt'
+
+# Run stl.py from host command line
+docker compose exec jupyter-scipy-notebook work/.venv/bin/python /home/jovyan/work/stl.py search -v "Madrid, Spain"
+```
+
+## Using kibana
+
+You can directly view records in Elasticsearch by using Kibana. 
+
+1. Scrape some listings using above commands
+2. Browse to http://localhost:5601/app/management/kibana/dataViews (u: elastic / p: abc123)
+3. Click "Create new data view" on top right
+4. Use `short-term-listings` as name and index pattern
+5. Click "Save data view to Kibana"
+6. Click "Analytics > Discover" on the main menu, selecting the `short-term-listings` data view, and see JSON records 
