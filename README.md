@@ -81,7 +81,7 @@ docker compose exec jupyter-scipy-notebook bash -c 'cd work && python3 -m venv .
 # hosts = https://es01:9200
 
 # Run stl.py from host command line
-docker compose exec jupyter-scipy-notebook work/.venv/bin/python /home/jovyan/work/stl.py search -v "Madrid, Spain"
+docker compose exec jupyter-scipy-notebook work/.venv/bin/python work/stl.py search -v "Madrid, Spain"
 ```
 
 ## Using kibana
