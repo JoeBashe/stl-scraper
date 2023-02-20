@@ -86,11 +86,16 @@ docker compose exec jupyter-scipy-notebook work/.venv/bin/python work/stl.py sea
 
 ## Using kibana
 
-You can directly view records in Elasticsearch by using Kibana. 
+You can directly view records in Elasticsearch by using Kibana.
 
 1. Scrape some listings using above commands
 2. Browse to http://localhost:5601/app/management/kibana/dataViews (u: elastic / p: abc123)
 3. Click "Create new data view" on top right
 4. Use `short-term-listings` as name and index pattern
 5. Click "Save data view to Kibana"
-6. Click "Analytics > Discover" on the main menu, selecting the `short-term-listings` data view, and see JSON records 
+6. Click "Analytics > Discover" on the main menu, selecting the `short-term-listings` data view, and see JSON records
+
+## Troubleshooting
+
+- You may need to run `sudo sysctl -w vm.max_map_count=262144` on your host machine (see
+  https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
