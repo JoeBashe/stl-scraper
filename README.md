@@ -51,11 +51,15 @@ Global Options:
 
 ## Installation
 
-Clone the repo, then:
+### Installation via pip (Option 1 - Basic)
+
+This option assumes you have Python >= 3.10 installed, and that you will manage dependencies using the python `venv` 
+module with `pip`. You can connect to your own instance of Elasticsearch. However, elasticsearch is not required.
 
 ```shell
-# create the config file
+# create the config files
 cp stl.ini.dist stl.ini
+cp .env.dist .env
 
 # create the virtual env
 python3 -m venv .venv
@@ -66,3 +70,42 @@ python3 -m venv .venv
 # install dependencies in virtual env
 pip install -r requirements.txt
 ```
+
+### Installation via docker compose (Option 2 - Advanced)
+
+This option uses docker compose to build:
+
+- `jupyter-scipy-notebook`: jupyter scipy notebook, python, conda
+- `setup` temporary container that configures elasticsearch & kibana security
+- `es01`: elasticsearch container
+- `kibana`: kibana container
+
+```shell
+# Create the containers
+docker compose up -d
+
+# Install project requirements
+docker compose exec jupyter-scipy-notebook conda install --yes --file work/requirements.txt
+
+# NOTE: Edit hosts in [elasticsearch] section of stl.ini:
+# hosts = https://es01:9200
+
+# Run stl.py from host command line
+docker compose exec jupyter-scipy-notebook /opt/conda/bin/python work/stl.py search -v "Madrid, Spain"
+```
+
+## Using kibana
+
+You can directly view records in Elasticsearch by using Kibana.
+
+1. Scrape some listings using above commands
+2. Browse to http://localhost:5601/app/management/kibana/dataViews (u: elastic / p: abc123)
+3. Click "Create new data view" on top right
+4. Use `short-term-listings` as name and index pattern
+5. Click "Save data view to Kibana"
+6. Click "Analytics > Discover" on the main menu, selecting the `short-term-listings` data view, and see JSON records
+
+## Troubleshooting
+
+- If using Elasticsearch, you may need to run `sudo sysctl -w vm.max_map_count=262144` on your host machine (see
+  https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
