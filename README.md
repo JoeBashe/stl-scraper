@@ -51,7 +51,10 @@ Global Options:
 
 ## Installation
 
-### Installation via pip
+### Installation via pip (Option 1 - Basic)
+
+This option assumes you have Python >= 3.10 installed, and that you will manage dependencies using the python `venv` 
+module with `pip`. You can connect to your own instance of Elasticsearch. However, elasticsearch is not required.
 
 ```shell
 # create the config files
@@ -68,7 +71,14 @@ python3 -m venv .venv
 pip install -r requirements.txt
 ```
 
-### Installation via docker-compose
+### Installation via docker compose (Option 2 - Advanced)
+
+This option uses docker compose to build:
+
+- `jupyter-scipy-notebook`: jupyter scipy notebook, python, conda
+- `setup` temporary container that configures elasticsearch & kibana security
+- `es01`: elasticsearch container
+- `kibana`: kibana container
 
 ```shell
 # Create the containers
@@ -81,7 +91,7 @@ docker compose exec jupyter-scipy-notebook conda install --yes --file work/requi
 # hosts = https://es01:9200
 
 # Run stl.py from host command line
-docker compose exec jupyter-scipy-notebook work/.venv/bin/python work/stl.py search -v "Madrid, Spain"
+docker compose exec jupyter-scipy-notebook /opt/conda/bin/python work/stl.py search -v "Madrid, Spain"
 ```
 
 ## Using kibana
@@ -97,5 +107,5 @@ You can directly view records in Elasticsearch by using Kibana.
 
 ## Troubleshooting
 
-- You may need to run `sudo sysctl -w vm.max_map_count=262144` on your host machine (see
+- If using Elasticsearch, you may need to run `sudo sysctl -w vm.max_map_count=262144` on your host machine (see
   https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html)
