@@ -34,7 +34,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         listings = []
         url = self.__explore.get_url(query, params)
         data, pagination = self.__explore.search(url)
-        self.__geography.update(self.__normalize_geography(data))
+        self.__geography.update(self.__normalize_geography(data, query))
         self.__logger.info('Getting {} results for "{}" - ({})'.format(
             pagination['totalCount'], self.__geography['fullAddress'], params)
         )
@@ -95,12 +95,20 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
             params['sw_lng'] = parsed_qs['sw_lng'][0]
 
     @staticmethod
-    def __normalize_geography(data: dict):
+    def __normalize_geography(data: dict, query: str):
         """Get and clean geography metadata."""
-        return {
+        geography = {
             k: (v.strip() if isinstance(v, str) else v)
             for k, v in data['data']['dora']['exploreV3']['metadata']['geography'].items()
         }
+        if not geography['city']:
+            query_components = query.split(', ')
+            n_query_components = len(query_components)
+            if n_query_components == 2:
+                city, country = query_components
+                geography['city'] = city
+
+        return geography
 
 
 class AirbnbCalendarScraper(AirbnbScraperInterface):
