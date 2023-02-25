@@ -55,18 +55,24 @@ class BaseEndpoint(ABC):
 
     def __handle_api_error(self, url: str, errors: list):
         error = errors.pop()
-        if isinstance(error, dict) and error.get('extensions'):
-            if error['extensions'].get('response'):
-                status_code = error['extensions']['response'].get('statusCode')
-                if status_code == 403:
-                    self._logger.critical('403 Forbidden: %s' % url)
-                    raise ForbiddenException([error])
-                if status_code >= 500:
+        if isinstance(error, dict):
+            if error.get('extensions'):
+                if error['extensions'].get('response'):
+                    status_code = error['extensions']['response'].get('statusCode')
+                    if status_code == 403:
+                        self._logger.critical('403 Forbidden: %s' % url)
+                        raise ForbiddenException([error])
+                    if status_code >= 500:
+                        sleep(60)  # sleep for a minute and then make another attempt
+                        self._logger.warning(error)
+                        return
+                elif error['extensions'].get('classification') == 'DataFetchingException':
                     sleep(60)  # sleep for a minute and then make another attempt
-                    self._logger.warning(error)
+                    self._logger.warning(error['message'])
                     return
-            elif error['extensions'].get('classification') == 'DataFetchingException':
-                sleep(60)  # sleep for a minute and then make another attempt
+
+            if 'please try again' in error['message'].lower():
+                sleep(30)  # sleep 30 seconds then make another attempt
                 self._logger.warning(error['message'])
                 return
 
