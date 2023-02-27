@@ -61,8 +61,7 @@ Global Options:
 
 ## Requirements
 
-- BSD | Linux | WSL
-- Python >= 3.10
+- Python >= 3.10, or Docker Compose
 
 ## Installation
 
