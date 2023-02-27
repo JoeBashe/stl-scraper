@@ -7,6 +7,8 @@ results to a CSV file or Elasticsearch.
 
 ## Usage
 
+### (basic installation)
+
 ```shell
 # activate the virtual env
 . .venv/bin/activate
@@ -14,6 +16,19 @@ results to a CSV file or Elasticsearch.
 # run the script
 ./stl.py search "Madrid, Spain"
 ```
+
+### (advanced installation)
+```shell
+# spin up the containers
+docker compose up -d
+
+# ensure dependencies installed
+docker compose exec jupyter-scipy-notebook conda install --yes --file work/requirements.txt
+
+# run the script
+docker compose exec jupyter-scipy-notebook /opt/conda/bin/python work/stl.py search -v "Madrid, Spain"
+```
+
 
 ## Options
 
@@ -54,7 +69,7 @@ Global Options:
 ### Installation via pip (Option 1 - Basic)
 
 This option assumes you have Python >= 3.10 installed, and that you will manage dependencies using the python `venv` 
-module with `pip`. You can connect to your own instance of Elasticsearch. However, elasticsearch is not required.
+module with `pip`. You can connect to your own instance of Elasticsearch. However, Elasticsearch is not required.
 
 ```shell
 # create the config files
@@ -85,12 +100,6 @@ docker compose up -d
 
 # Install project requirements
 docker compose exec jupyter-scipy-notebook conda install --yes --file work/requirements.txt
-
-# NOTE: Edit hosts in [elasticsearch] section of stl.ini:
-# hosts = https://es01:9200
-
-# Run stl.py from host command line
-docker compose exec jupyter-scipy-notebook /opt/conda/bin/python work/stl.py search -v "Madrid, Spain"
 ```
 
 ## Using kibana
