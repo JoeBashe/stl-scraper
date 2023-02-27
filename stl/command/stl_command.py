@@ -160,7 +160,7 @@ Global Options:
 
     def __get_list_arg(self, arg_name: str) -> list | None:
         """Get CLI comma-separated list argument, fall back to config."""
-        arg_val = self.__args.get('--{}'.format(arg_name)) or os.getenv('SEARCH_'.format(arg_name.upper()), '')
+        arg_val = self.__args.get('--{}'.format(arg_name)) or os.getenv('SEARCH_{}'.format(arg_name.upper()), '')
         if not arg_val:
             return None
 
