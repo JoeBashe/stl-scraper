@@ -46,16 +46,25 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
             listing_ids = self.__pdp.collect_listings_from_sections(data, self.__geography, data_cache)
             for listing_id in listing_ids:  # request each property page
                 if listing_id in self.__ids_seen:
-                    self.__logger.warning('Duplicate listing: {}'.format(listing_id))
+                    self.__logger.info('Duplicate listing: {}'.format(listing_id))
                     continue  # skip duplicates
                 self.__ids_seen.add(listing_id)
                 n_listings += 1
                 reviews = self.__reviews.get_reviews(listing_id)
                 listing = self.__pdp.get_listing(listing_id, data_cache, self.__geography, reviews)
-                self.__logger.info(
-                    'Listing #{}: {} ({}, ${}/{})'.format(
-                        n_listings, listing_id, listing['city'], listing['price_rate'], listing['price_rate_type']
-                    ))
+
+                msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
+                    '#' + str(n_listings),
+                    listing['city'],
+                    '${} {}'.format(listing['price_rate'], listing['price_rate_type']),
+                    str(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
+                    '{:.2f}ba'.format(listing['bathrooms']),
+                    listing['room_and_property_type'],
+                    '- {} -'.format(listing['neighborhood']) if listing['neighborhood'] else '',
+                    listing['name'],
+                    listing['url']
+                )
+                self.__logger.info(msg)
                 listings.append(listing)
 
             self.__add_search_params(params, url)
