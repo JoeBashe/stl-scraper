@@ -1,11 +1,13 @@
 import base64
 import lxml.html
+import pycountry
 import re
 
 from datetime import datetime
 from logging import Logger
 
 from stl.endpoint.base_endpoint import BaseEndpoint
+from stl.geo.geocode import Geocoder
 
 
 class Pdp(BaseEndpoint):
@@ -70,6 +72,7 @@ class Pdp(BaseEndpoint):
 
     def __init__(self, api_key: str, currency: str, logger: Logger):
         super().__init__(api_key, currency, logger)
+        self.__geocoder = Geocoder()
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
     @staticmethod
@@ -89,23 +92,27 @@ class Pdp(BaseEndpoint):
         url = self.__get_url(listing_id)
         return self._api_request(url)
 
-    def collect_listings_from_sections(self, data: dict, data_cache: dict):
+    def collect_listings_from_sections(self, data: dict, geography: dict, data_cache: dict):
         """Get listings from "sections" (i.e. search results page sections)."""
         sections = data['data']['dora']['exploreV3']['sections']
         listing_ids = []
         for section in [s for s in sections if s['sectionComponentType'] == 'listings_ListingsGrid_Explore']:
             for listing_item in section.get('items'):
                 listing_id = listing_item['listing']['id']
-                self.__collect_listing_data(listing_item, data_cache)
+                self.__collect_listing_data(listing_item, geography, data_cache)
                 listing_ids.append(listing_id)
 
         return listing_ids
 
-    def __collect_listing_data(self, listing_item: dict, data_cache: dict):
-        """Collect listing data from search results, save in _data_cache. All listing data is aggregated together in the
-        parse_listing_contents method."""
+    def __collect_listing_data(self, listing_item: dict, geography: dict, data_cache: dict):
+        """Collect listing data from search results, save in _data_cache. 
+
+        The section data for each search result listing will later be combined with the PDP listing data in the 
+        `parse_listing_contents()` method.
+        """
         listing = listing_item['listing']
         pricing = listing_item['pricingQuote'] or {}
+        city, neighborhood = self.__determine_city_and_neighborhood(listing, geography)
 
         data_cache[listing['id']] = {
             # get general data
@@ -114,11 +121,12 @@ class Pdp(BaseEndpoint):
             'bedrooms':               listing['bedrooms'],
             'beds':                   listing['beds'],
             'business_travel_ready':  listing['isBusinessTravelReady'],
-            'city':                   listing['city'].strip(),
+            'city':                   city,
             'host_id':                listing['user']['id'],
             'latitude':               listing['lat'],
             'longitude':              listing['lng'],
             'name':                   listing['name'],
+            'neighborhood':           neighborhood,
             'neighborhood_overview':  listing['neighborhoodOverview'],
             'person_capacity':        listing['personCapacity'],
             'photo_count':            listing['pictureCount'],
@@ -261,6 +269,7 @@ class Pdp(BaseEndpoint):
             'longitude':              listing_data_cached['longitude'],
             'monthly_price_factor':   listing_data_cached.get('monthly_price_factor'),
             'name':                   listing_data_cached.get('name', listing_id),
+            'neighborhood':           listing_data_cached.get('neighborhood'),
             'neighborhood_overview':  listing_data_cached.get('neighborhood_overview'),
             'person_capacity':        listing_data_cached['person_capacity'],
             'photo_count':            listing_data_cached['photo_count'],
@@ -297,6 +306,64 @@ class Pdp(BaseEndpoint):
 
         return item
 
+    def __determine_city_and_neighborhood(self, listing: dict, geography: dict):
+        """Determine city and neighborhood. 
+
+        It is way more complicated to get the city name than you'd expect. Airbnb sometimes puts the 
+        neighborhood/borough/district into the city field, or give results from different cities entirely. Therefore,
+        we use reverse geocoding (and, of course, advanced AI) to determine what the actual city name is. As a bonus,
+        we also try to get the neighborhood.
+        """
+        public_address_components = list(map(str.strip, filter(bool, listing['publicAddress'].split(','))))
+        search_city = geography['city']
+
+        city = Pdp.__capitalize_first(listing['city'])
+        neighborhood = listing['neighborhood']
+
+        localized_city = Pdp.__capitalize_first(listing['localizedCity'])
+        localized_neighborhood = listing['localizedNeighborhood']
+
+        if search_city == city:
+            return city, localized_neighborhood or neighborhood
+        elif search_city == localized_city:
+            city = localized_city
+
+        address_city, address_neighborhood, address_district = None, None, None
+        unknown_components = []
+        for component in filter(bool, public_address_components):
+            if component == search_city:
+                address_city = component
+            elif component == localized_neighborhood:
+                address_neighborhood = component
+            else:
+                try:
+                    result = pycountry.countries.lookup(component) or pycountry.subdivisions.lookup(component)
+                    continue  # skip countries and state/province subdivisions
+                except LookupError:
+                    unknown_components.append(component)
+
+        if address_city and localized_neighborhood:
+            return address_city, localized_neighborhood
+
+        n_unknown_componenets = len(unknown_components)
+        if n_unknown_componenets == 0:
+            return address_city, neighborhood
+        elif n_unknown_componenets == 1:
+            if address_neighborhood and address_city:
+                address_district = unknown_components.pop()
+            elif address_city:
+                address_neighborhood = unknown_components.pop()
+
+        reverse_geo_address = self.__geocoder.reverse(listing['lat'], listing['lng'])
+        if reverse_geo_address and 'city' in reverse_geo_address:
+            if reverse_geo_address['city'] in [search_city, city, localized_city] or self.__geocoder.is_city(reverse_geo_address['city'], reverse_geo_address['country']):
+                return reverse_geo_address['city'], localized_neighborhood
+
+        if self.__geocoder.is_city((city or localized_city), reverse_geo_address['country']):
+            return city or localized_city, neighborhood
+
+        return city, neighborhood
+
     def __get_amenity_ids(self, amenities: list):
         """Extract amenity id from `id` string field."""
         for amenity in amenities:
@@ -309,6 +376,12 @@ class Pdp(BaseEndpoint):
             item[prop] = self.__html_to_text([i[key]['htmlText'] for i in prop_list if i['title'] == title][0])
         else:
             item[prop] = None
+
+    @staticmethod
+    def __capitalize_first(name: str | None) -> str:
+        if name:
+            return name[0].upper() + name[1:]
+        return name
 
     @staticmethod
     def __get_price_key(pricing) -> str:

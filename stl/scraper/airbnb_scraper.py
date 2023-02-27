@@ -43,7 +43,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         data_cache = {}
         while pagination.get('hasNextPage'):
             self.__logger.info('Searching page {} for {}'.format(page, query))
-            listing_ids = self.__pdp.collect_listings_from_sections(data, data_cache)
+            listing_ids = self.__pdp.collect_listings_from_sections(data, self.__geography, data_cache)
             for listing_id in listing_ids:  # request each property page
                 if listing_id in self.__ids_seen:
                     self.__logger.warning('Duplicate listing: {}'.format(listing_id))
