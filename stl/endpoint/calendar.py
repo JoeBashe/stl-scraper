@@ -115,10 +115,10 @@ class Pricing(BaseEndpoint):
             discount = -1 * (items['DISCOUNT']['total']['amountMicros'] / mega)
             pricing['discount'] = discount
             pricing['tax_rate'] = taxes / (price_accommodation + pricing['price_cleaning'] - discount)
-            if 'Weekly discount' == items['DISCOUNT']['localizedTitle']:
+            if items['DISCOUNT']['localizedTitle'] in ['Weekly discount', 'Weekly stay discount']:
                 pricing['discount_monthly'] = None
                 pricing['discount_weekly'] = discount / price_accommodation
-            elif 'Monthly discount' == items['DISCOUNT']['localizedTitle']:
+            elif items['DISCOUNT']['localizedTitle'] in ['Monthly discount', 'Monthly stay discount']:
                 pricing['discount_monthly'] = discount / price_accommodation
                 pricing['discount_weekly'] = None
             else:
