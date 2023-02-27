@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -81,7 +82,7 @@ Global Options:
 
         elif self.__args.get('data'):
             pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, self.__logger)
-            print(pdp.get_raw_listing(self.__args.get('<listingId>')))
+            print(json.dumps(pdp.get_raw_listing(self.__args.get('<listingId>'))))
 
         elif self.__args.get('pricing'):
             listing_id = self.__args.get('<listingId>')
