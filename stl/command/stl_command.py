@@ -1,8 +1,7 @@
 import logging
-import os.path
+import os
 import sys
 
-from configparser import ConfigParser
 from elasticsearch import Elasticsearch
 from elastic_transport import ConnectionError
 from logging import Logger
@@ -63,56 +62,46 @@ Global Options:
 
     def execute(self):
         project_path = os.path.dirname(os.path.realpath('{}/../../'.format(__file__)))
-        config = StlCommand.__config(project_path)
-        currency = self.__args.get('--currency') or config['search'].get('currency', 'USD')
+        currency = self.__args.get('--currency') or os.getenv('SEARCH_CURRENCY', 'USD')
         if self.__args.get('search'):
             query = self.__args['<query>']
-            persistence = self.__create_persistence(config, project_path, query)
-            scraper = self.__create_scraper('search', persistence, config, currency)
-            params = self.__get_search_params(config)
+            persistence = self.__create_persistence(project_path, query)
+            scraper = self.__create_scraper('search', persistence, currency)
+            params = self.__get_search_params()
             scraper.run(query, params)
 
         elif self.__args.get('calendar'):
             if self.__args.get('--all') and self.__args.get('--storage') == 'csv':
                 self.__logger.critical('"csv" storage backend not supported in combination with "--all" option.')
                 exit(1)
-            persistence = self.__create_persistence(config, project_path)
-            scraper = self.__create_scraper('calendar', persistence, config, currency)
+            persistence = self.__create_persistence(project_path)
+            scraper = self.__create_scraper('calendar', persistence, currency)
             source = 'elasticsearch' if self.__args.get('--all') else self.__args['<listingId>']
             scraper.run(source, self.__args.get('--updated'))
 
         elif self.__args.get('data'):
-            api_key = config['airbnb']['api_key']
-            pdp = Pdp(api_key, currency, self.__logger)
+            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, self.__logger)
             print(pdp.get_raw_listing(self.__args.get('<listingId>')))
 
         elif self.__args.get('pricing'):
             listing_id = self.__args.get('<listingId>')
             checkin = self.__args.get('--checkin')
             checkout = self.__args.get('--checkout')
-            pricing = Pricing(config['airbnb']['api_key'], currency, self.__logger)
+            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, self.__logger)
             total = pricing.get_pricing(checkin, checkout, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
 
         else:
             raise RuntimeError('ERROR: Unexpected command:\n{}'.format(*self.__args))
 
-    @staticmethod
-    def __config(project_path: str) -> ConfigParser:
-        """Load and return app config from stl.ini config file."""
-        config = ConfigParser()
-        config.read(os.path.join(project_path, 'stl.ini'))
-        return config
-
     def __create_scraper(
             self,
             scraper_type: str,
             persistence: PersistenceInterface,
-            config: ConfigParser,
             currency: str
     ) -> AirbnbScraperInterface:
         """Create scraper of given type using given parameters."""
-        api_key = config['airbnb']['api_key']
+        api_key = os.getenv('AIRBNB_API_KEY')
         if scraper_type == 'search':
             explore = Explore(api_key, currency, self.__logger)
             pdp = Pdp(api_key, currency, self.__logger)
@@ -125,23 +114,21 @@ Global Options:
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)
 
-    def __create_persistence(
-            self, config: ConfigParser, project_path: str = None, query: str = None) -> PersistenceInterface:
+    def __create_persistence(self, project_path: str = None, query: str = None) -> PersistenceInterface:
         """Create persistence layer - either CSV or Elasticsearch."""
-        storage_type = self.__args.get('--storage') or config['storage']['type']
+        storage_type = self.__args.get('--storage') or os.getenv('STORAGE_TYPE')
         if storage_type == 'elasticsearch':
-            es_cfg = config['elasticsearch']
             es_params = {
-                'hosts':      es_cfg['hosts'],
-                'basic_auth': (es_cfg['username'], es_cfg['password']),
+                'hosts':      os.getenv('ELASTIC_HOSTS'),
+                'basic_auth': (os.getenv('ELASTIC_USERNAME'), os.getenv('ELASTIC_PASSWORD')),
             }
-            if es_cfg['ca_cert']:
-                es_params['ca_certs'] = es_cfg['ca_cert']
+            if os.getenv('ELASTIC_CA_CERT'):
+                es_params['ca_certs'] = os.getenv('ELASTIC_CA_CERT')
             else:
                 es_params['verify_certs'] = False
-            persistence = Elastic(Elasticsearch(**es_params), config['elasticsearch']['index'])
+            persistence = Elastic(Elasticsearch(**es_params), os.getenv('ELASTIC_INDEX'))
             try:
-                persistence.create_index_if_not_exists(config['elasticsearch']['index'])
+                persistence.create_index_if_not_exists(os.getenv('ELASTIC_INDEX'))
             except ConnectionError as e:
                 self.__logger.critical(e.message + '\nCould not connect to elasticsearch.')
                 exit(1)
@@ -151,10 +138,10 @@ Global Options:
 
         return persistence
 
-    def __get_search_params(self, config: ConfigParser) -> dict:
-        """Get search parameters: roomTypes,."""
+    def __get_search_params(self) -> dict:
+        """Get search parameters: roomTypes, checkin, checkout, priceMin, priceMax."""
         params = {}
-        room_types = self.__get_list_arg(config, 'roomTypes')
+        room_types = self.__get_list_arg('roomTypes')
         if room_types:
             params['roomTypes'] = room_types
 
@@ -170,9 +157,10 @@ Global Options:
 
         return params
 
-    def __get_list_arg(self, config: ConfigParser, arg_name: str) -> list | None:
+    def __get_list_arg(self, arg_name: str) -> list | None:
         """Get CLI comma-separated list argument, fall back to config."""
-        arg_val = self.__args.get('--{}'.format(arg_name)) or config['search'].get(arg_name, '')
+        arg_val = self.__args.get('--{}'.format(arg_name)) or os.getenv('SEARCH_'.format(arg_name.upper()), '')
         if not arg_val:
             return None
+
         return list(filter(bool, map(str.strip, str(arg_val).split(','))))
