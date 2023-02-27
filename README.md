@@ -58,7 +58,6 @@ module with `pip`. You can connect to your own instance of Elasticsearch. Howeve
 
 ```shell
 # create the config files
-cp stl.ini.dist stl.ini
 cp .env.dist .env
 
 # create the virtual env
