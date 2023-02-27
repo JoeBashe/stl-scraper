@@ -7,7 +7,7 @@ results to a CSV file or Elasticsearch.
 
 ## Usage
 
-### (basic installation)
+### Usage (basic installation)
 
 ```shell
 # activate the virtual env
@@ -17,7 +17,7 @@ results to a CSV file or Elasticsearch.
 ./stl.py search "Madrid, Spain"
 ```
 
-### (advanced installation)
+### Usage (advanced installation)
 ```shell
 # spin up the containers
 docker compose up -d
