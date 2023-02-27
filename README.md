@@ -72,7 +72,7 @@ This option assumes you have Python >= 3.10 installed, and that you will manage 
 module with `pip`. You can connect to your own instance of Elasticsearch. However, Elasticsearch is not required.
 
 ```shell
-# create the config files
+# create the config file
 cp .env.dist .env
 
 # create the virtual env
@@ -95,6 +95,9 @@ This option uses docker compose to build:
 - `kibana`: kibana container
 
 ```shell
+# create the config file
+cp .env.dist .env
+
 # Create the containers
 docker compose up -d
 
