@@ -6,10 +6,6 @@ from random import randint
 
 
 class Geocoder:
-    """Chained geocoder.
-
-    Tries OSM reverse geocoder (Nomatim) first. If it fails, tries maps.co reverse geocoder.
-    """
 
     def __init__(self) -> None:
         gmaps_api_key = os.environ.get('GMAPS_API_KEY')
@@ -29,6 +25,7 @@ class Geocoder:
             return False
 
     def reverse(self, lat: float, lon: float) -> dict | bool:
+        """Tries OSM reverse geocoder (Nomatim) first. If it fails, tries Google Maps reverse geocoder (untested)."""
         # Try OSM
         address = self.__osm_reverse_geo((lat, lon), language='en').raw['address']
         if 'city' in address:
