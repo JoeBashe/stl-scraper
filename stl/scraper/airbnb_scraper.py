@@ -39,9 +39,12 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
             pagination['totalCount'], self.__geography['fullAddress'], params)
         )
         n_listings = 0
+        max_pages = 1
         page = 1
         data_cache = {}
-        while pagination.get('hasNextPage'):
+        while page <= max_pages:
+            if pagination.get('hasNextPage'):
+                max_pages+=1
             self.__logger.info('Searching page {} for {}'.format(page, query))
             listing_ids = self.__pdp.collect_listings_from_sections(data, self.__geography, data_cache)
             for listing_id in listing_ids:  # request each property page
