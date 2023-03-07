@@ -17,7 +17,7 @@ class BaseEndpoint(ABC):
     API_PATH = None
     SOURCE = 'airbnb'
 
-    def __init__(self, api_key: str, currency: str, proxy: str, ignore_cert: bool, throttle:bool, logger: Logger, locale: str = 'en'):
+    def __init__(self, api_key: str, currency: str, proxy: str, ignore_cert: bool, throttle:int, logger: Logger, locale: str = 'en'):
         self._api_key = api_key
         self._currency = currency
         self._locale = locale
@@ -42,8 +42,7 @@ class BaseEndpoint(ABC):
         headers = {'x-airbnb-api-key': self._api_key}
         max_attempts = 3
         while attempts < max_attempts:
-            if self._throttle:
-                sleep(randint(0, 2))  # do a little throttling
+            sleep(randint(0,self._throttle))  # do a little throttling
             attempts += 1
             response = requests.request(method, url, headers=headers, data=data, proxies=self._proxy, verify=self._verify_cert)
             response_json = response.json()
