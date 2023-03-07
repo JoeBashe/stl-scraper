@@ -81,10 +81,13 @@ Global Options:
             scraper.run(source, self.__args.get('--updated'))
 
         elif self.__args.get('data'):
-            ignore_cert = os.getenv('IGNORE_CERT', False)
-            if ignore_cert != False:
+            ignore_cert = os.getenv('IGNORE_CERT',False)
+            if ignore_cert != False and ignore_cert!=0:
                 ignore_cert = True
-            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, self.__logger)
+            throttle = os.getenv('THROTTLE', True)
+            if throttle != True and throttle!=1:
+                throttle = False
+            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, throttle, self.__logger)
             print(json.dumps(pdp.get_raw_listing(self.__args.get('<listingId>'))))
 
         elif self.__args.get('pricing'):
@@ -94,7 +97,7 @@ Global Options:
             ignore_cert = os.getenv('IGNORE_CERT', False)
             if ignore_cert != False:
                 ignore_cert = True
-            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, self.__logger)
+            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, throttle, self.__logger)
             total = pricing.get_pricing(checkin, checkout, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
 
@@ -113,14 +116,17 @@ Global Options:
         ignore_cert = os.getenv('IGNORE_CERT', False)
         if ignore_cert != False:
             ignore_cert = True
+        throttle = os.getenv('THROTTLE', True)
+        if throttle != True and throttle!=1:
+            throttle = False
         if scraper_type == 'search':
-            explore = Explore(api_key, currency, proxy, ignore_cert, self.__logger)
-            pdp = Pdp(api_key, currency, proxy, ignore_cert, self.__logger)
-            reviews = Reviews(api_key, currency, proxy, ignore_cert, self.__logger)
+            explore = Explore(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
+            pdp = Pdp(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
+            reviews = Reviews(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
             return AirbnbSearchScraper(explore, pdp, reviews, persistence, self.__logger)
         elif scraper_type == 'calendar':
-            pricing = Pricing(api_key, currency, proxy, ignore_cert, self.__logger)
-            calendar = Calendar(api_key, currency, proxy, ignore_cert, self.__logger, pricing)
+            pricing = Pricing(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
+            calendar = Calendar(api_key, currency, proxy, ignore_cert, throttle, self.__logger, pricing)
             return AirbnbCalendarScraper(calendar, persistence, self.__logger)
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)

@@ -52,20 +52,22 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                 n_listings += 1
                 reviews = self.__reviews.get_reviews(listing_id)
                 listing = self.__pdp.get_listing(listing_id, data_cache, self.__geography, reviews)
-
-                msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
-                    '#' + str(n_listings),
-                    listing['city'],
-                    '${} {}'.format(listing['price_rate'], listing['price_rate_type']),
-                    str(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
-                    '{:.2f}ba'.format(listing['bathrooms']),
-                    listing['room_and_property_type'],
-                    '- {} -'.format(listing['neighborhood']) if listing['neighborhood'] else '',
-                    listing['name'],
-                    listing['url']
-                )
-                self.__logger.info(msg)
-                listings.append(listing)
+                try:
+                    msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
+                        '#' + str(n_listings),
+                        listing['city'],
+                        '${} {}'.format(listing['price_rate'], listing['price_rate_type']),
+                        str(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
+                        '{:.2f}ba'.format(listing['bathrooms']),
+                        listing['room_and_property_type'],
+                        '- {} -'.format(listing['neighborhood']) if listing['neighborhood'] else '',
+                        listing['name'],
+                        listing['url']
+                    )
+                    self.__logger.info(msg)
+                    listings.append(listing)
+                except:
+                    self.__logger.error('ERROR_TO_HANDLE -- '+listing['url']+' -- '+listing)
 
             self.__add_search_params(params, url)
             items_offset = pagination['itemsOffset']

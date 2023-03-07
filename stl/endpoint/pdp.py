@@ -70,8 +70,8 @@ class Pdp(BaseEndpoint):
 
     SECTION_NAMES = ['amenities', 'description', 'host_profile', 'location', 'policies']
 
-    def __init__(self, api_key: str, currency: str,  proxy: str, ignore_cert: bool, logger: Logger):
-        super().__init__(api_key, currency, proxy, ignore_cert, logger)
+    def __init__(self, api_key: str, currency: str,  proxy: str, ignore_cert: bool, throttle: bool, logger: Logger):
+        super().__init__(api_key, currency, proxy, ignore_cert,throttle, logger)
         self.__geocoder = Geocoder()
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
@@ -391,8 +391,12 @@ class Pdp(BaseEndpoint):
     def __get_price_rate(pricing) -> int | None:
         if pricing:
             price_key = Pdp.__get_price_key(pricing)
+            print(pricing['structuredStayDisplayPrice']['primaryLine'][price_key])
             return int(pricing['structuredStayDisplayPrice']['primaryLine'][price_key].lstrip('$').replace(',', ''))
 
+            #res=pricing['structuredStayDisplayPrice']['primaryLine'][price_key].replace('\xa0',' ')
+            #print
+            #return int(re.search(r'\d+',res).group())
         return None
 
     @staticmethod
