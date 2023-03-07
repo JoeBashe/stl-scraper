@@ -9,16 +9,22 @@ from urllib.parse import urlunparse, urlencode
 
 from stl.exception.api import ApiException, ForbiddenException
 
+import urllib3
+urllib3.disable_warnings()
+
 
 class BaseEndpoint(ABC):
     API_PATH = None
     SOURCE = 'airbnb'
 
-    def __init__(self, api_key: str, currency: str, logger: Logger, locale: str = 'en'):
+    def __init__(self, api_key: str, currency: str, proxy: str, ignore_cert: bool, logger: Logger, locale: str = 'en'):
         self._api_key = api_key
         self._currency = currency
         self._locale = locale
         self._logger = logger
+        self.proxy = {'http': proxy,
+                      'https': proxy}
+        self.verify_cert = not ignore_cert
 
     @staticmethod
     def build_airbnb_url(path: str, query=None):
@@ -37,7 +43,7 @@ class BaseEndpoint(ABC):
         while attempts < max_attempts:
             sleep(randint(0, 2))  # do a little throttling
             attempts += 1
-            response = requests.request(method, url, headers=headers, data=data)
+            response = requests.request(method, url, headers=headers, data=data, proxies=self.proxy, verify=self.verify_cert)
             response_json = response.json()
             errors = response_json.get('errors')
             if not errors:

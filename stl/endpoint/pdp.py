@@ -70,8 +70,8 @@ class Pdp(BaseEndpoint):
 
     SECTION_NAMES = ['amenities', 'description', 'host_profile', 'location', 'policies']
 
-    def __init__(self, api_key: str, currency: str, logger: Logger):
-        super().__init__(api_key, currency, logger)
+    def __init__(self, api_key: str, currency: str,  proxy: str, ignore_cert: bool, logger: Logger):
+        super().__init__(api_key, currency, proxy, ignore_cert, logger)
         self.__geocoder = Geocoder()
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
