@@ -117,6 +117,7 @@ Global Options:
         if ignore_cert != False:
             ignore_cert = True
         throttle = os.getenv('THROTTLE', True)
+        
         if throttle != True and throttle!=1:
             throttle = False
         if scraper_type == 'search':

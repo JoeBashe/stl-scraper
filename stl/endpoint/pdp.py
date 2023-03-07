@@ -391,12 +391,8 @@ class Pdp(BaseEndpoint):
     def __get_price_rate(pricing) -> int | None:
         if pricing:
             price_key = Pdp.__get_price_key(pricing)
-            print(pricing['structuredStayDisplayPrice']['primaryLine'][price_key])
-            return int(pricing['structuredStayDisplayPrice']['primaryLine'][price_key].lstrip('$').replace(',', ''))
-
-            #res=pricing['structuredStayDisplayPrice']['primaryLine'][price_key].replace('\xa0',' ')
-            #print
-            #return int(re.search(r'\d+',res).group())
+            res=pricing['structuredStayDisplayPrice']['primaryLine'][price_key].replace('\xa0',' ')
+            return int ( ''.join(filter(str.isdigit, res) ) )
         return None
 
     @staticmethod
@@ -410,11 +406,11 @@ class Pdp(BaseEndpoint):
     def __get_total_price(pricing) -> int | None:
         if pricing['structuredStayDisplayPrice']['secondaryLine']:
             price = pricing['structuredStayDisplayPrice']['secondaryLine']['price']
-            amount_match = re.match(r'\$([\w,]+) total', price)
         else:
             price_key = Pdp.__get_price_key(pricing)
             price = pricing['structuredStayDisplayPrice']['primaryLine'][price_key]
-            amount_match = re.match(r'\$([\w,]+)', price)
+
+        amount_match = int ( ''.join(filter(str.isdigit, price) ) )
 
         if not amount_match:
             raise ValueError('No amount match found for price: %s' % price)
