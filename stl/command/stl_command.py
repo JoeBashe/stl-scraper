@@ -97,6 +97,9 @@ Global Options:
             ignore_cert = os.getenv('IGNORE_CERT', False)
             if ignore_cert != False:
                 ignore_cert = True
+            throttle = os.getenv('THROTTLE', True)
+            if throttle != True and throttle!=1:
+                throttle = False
             pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, throttle, self.__logger)
             total = pricing.get_pricing(checkin, checkout, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
@@ -117,7 +120,6 @@ Global Options:
         if ignore_cert != False:
             ignore_cert = True
         throttle = os.getenv('THROTTLE', True)
-        
         if throttle != True and throttle!=1:
             throttle = False
         if scraper_type == 'search':
