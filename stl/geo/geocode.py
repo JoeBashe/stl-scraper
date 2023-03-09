@@ -27,20 +27,26 @@ class Geocoder:
     def reverse(self, lat: float, lon: float) -> dict | bool:
         """Tries OSM reverse geocoder (Nomatim) first. If it fails, tries Google Maps reverse geocoder (untested)."""
         # Try OSM
-        address = self.__osm_reverse_geo((lat, lon), language='en').raw['address']
-        if 'city' in address:
-            return address
-        if 'town' in address:
-            address['city'] = address['town']
-            return address
-        if 'state' in address:
-            address['city'] = address['state']
-            return address
+        try:
+            address = self.__osm_reverse_geo((lat, lon), language='en').raw['address']
+            if 'city' in address:
+                return address
+            if 'town' in address:
+                address['city'] = address['town']
+                return address
+            if 'state' in address:
+                address['city'] = address['state']
+                return address
+        except:
+            pass
 
         # Else try google maps
         if self.__gmaps:
-            address = self.__gmaps.reverse((lat, lon), language='en')
-            if 'city' in address:
-                return address
+            try:
+                address = self.__gmaps.reverse((lat, lon), language='en')
+                if 'city' in address:
+                    return address
+            except:
+                pass
 
         return False

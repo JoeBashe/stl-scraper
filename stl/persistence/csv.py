@@ -13,3 +13,9 @@ class Csv(PersistenceInterface):
             writer = csv.DictWriter(csvfile, fieldnames=listings[0].keys())
             writer.writeheader()
             writer.writerows(listings)
+    
+    def save_continue(self, query: str, listings: list):
+        with open(self.__csv_path, 'aw', encoding='utf-8', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=listings[0].keys())
+            writer.writeheader()
+            writer.writerows(listings)

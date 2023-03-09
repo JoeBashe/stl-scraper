@@ -14,6 +14,8 @@ from stl.exception.api import ForbiddenException
 from stl.persistence.elastic import Elastic
 from stl.persistence import PersistenceInterface
 
+def xstr(s):
+    return '' if s is None else str(s)
 
 class AirbnbScraperInterface:
     def run(self, *args, **kwargs):
@@ -42,6 +44,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         page = 1
         data_cache = {}
         while pagination.get('hasNextPage'):
+            listings_continue =[]
             self.__logger.info('Searching page {} for {}'.format(page, query))
             listing_ids = self.__pdp.collect_listings_from_sections(data, self.__geography, data_cache)
             for listing_id in listing_ids:  # request each property page
@@ -55,17 +58,18 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                 try:
                     msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
                         '#' + str(n_listings),
-                        listing['city'],
-                        '${} {}'.format(listing['price_rate'], listing['price_rate_type']),
-                        str(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
-                        '{:.2f}ba'.format(listing['bathrooms']),
-                        listing['room_and_property_type'],
-                        '- {} -'.format(listing['neighborhood']) if listing['neighborhood'] else '',
-                        listing['name'],
-                        listing['url']
+                        xstr(listing['city']),
+                        '${} {}'.format(xstr(listing['price_rate']), xstr(listing['price_rate_type'])),
+                        xstr(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
+                        '{:.2f}ba'.format(listing['bathrooms'] if listing['bathrooms'] else 0),
+                        xstr(listing['room_and_property_type']),
+                        '- {} -'.format(xstr(listing['neighborhood'])),
+                        xstr(listing['name']),
+                        xstr(listing['url'])
                     )
                     self.__logger.info(msg)
                     listings.append(listing)
+                    listings_continue.append(listing)
                 except:
                     self.__logger.error('ERROR_TO_HANDLE -- '+listing['url']+' -- '+str(listing))
 
@@ -75,6 +79,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
             url = self.__explore.get_url(query, params)
             data, pagination = self.__explore.search(url)
             page += 1
+            self.__persistence.save(query, listings_continue)
 
         self.__persistence.save(query, listings)
         self.__logger.info('Got data for {} listings.'.format(n_listings))
