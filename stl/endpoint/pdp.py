@@ -415,7 +415,7 @@ class Pdp(BaseEndpoint):
         if not amount_match:
             raise ValueError('No amount match found for price: %s' % price)
 
-        return int(amount_match[1].replace(',', ''))
+        return int(amount_match)
 
     @staticmethod
     def __html_to_text(html: str) -> str:
