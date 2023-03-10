@@ -71,7 +71,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                     listings.append(listing)
                     listings_continue.append(listing)
                 except:
-                    self.__logger.error('ERROR_TO_HANDLE -- '+listing['url']+' -- '+str(listing))
+                    self.__logger.error('ERROR_TO_HANDLE -- '+str(listing['id']))
 
             self.__add_search_params(params, url)
             items_offset = pagination['itemsOffset']
@@ -79,9 +79,9 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
             url = self.__explore.get_url(query, params)
             data, pagination = self.__explore.search(url)
             page += 1
-            self.__persistence.save(query, listings_continue)
+            self.__persistence.save(query, listings_continue,continuous=True)
 
-        self.__persistence.save(query, listings)
+        #self.__persistence.save(query, listings)
         self.__logger.info('Got data for {} listings.'.format(n_listings))
 
     @staticmethod

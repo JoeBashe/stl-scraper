@@ -37,10 +37,9 @@ class BaseEndpoint(ABC):
     def _api_request(self, url: str, method: str = 'GET', data=None) -> dict:
         if data is None:
             data = {}
-
         attempts = 0
         headers = {'x-airbnb-api-key': self._api_key}
-        max_attempts = 3
+        max_attempts = 5
         while attempts < max_attempts:
             sleep(randint(0,self._throttle))  # do a little throttling
             attempts += 1

@@ -128,7 +128,7 @@ class Elastic(PersistenceInterface):
         """Mark a listing as deleted by setting the 'deleted' field to True."""
         self.__es.update(index=self.__index, id=listing_id, doc={'deleted': True})
 
-    def save(self, query: str, listings: list):
+    def save(self, query: str, listings: list,continuous:bool=False):
         """Bulk save listings by upsert."""
         bulk(self.__es, index=self.__index, actions=[{
             '_op_type':      'update',

@@ -359,8 +359,9 @@ class Pdp(BaseEndpoint):
             if reverse_geo_address['city'] in [search_city, city, localized_city] or self.__geocoder.is_city(reverse_geo_address['city'], reverse_geo_address['country']):
                 return reverse_geo_address['city'], localized_neighborhood
 
-        if self.__geocoder.is_city((city or localized_city), reverse_geo_address['country']):
-            return city or localized_city, neighborhood
+        if reverse_geo_address :
+            if self.__geocoder.is_city((city or localized_city), reverse_geo_address['country']):
+                return city or localized_city, neighborhood
 
         return city, neighborhood
 
