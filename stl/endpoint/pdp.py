@@ -70,9 +70,9 @@ class Pdp(BaseEndpoint):
 
     SECTION_NAMES = ['amenities', 'description', 'host_profile', 'location', 'policies']
 
-    def __init__(self, api_key: str, currency: str,  proxy: str, ignore_cert: bool, throttle: bool, logger: Logger):
-        super().__init__(api_key, currency, proxy, ignore_cert,throttle, logger)
-        self.__geocoder = Geocoder()
+    def __init__(self, api_key: str, currency: str,  proxy: str, ca_cert: str, throttle: bool, logger: Logger):
+        super().__init__(api_key, currency, proxy, ca_cert,throttle, logger)
+        self.__geocoder = Geocoder(proxy,ca_cert)
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
     @staticmethod
@@ -410,13 +410,14 @@ class Pdp(BaseEndpoint):
         else:
             price_key = Pdp.__get_price_key(pricing)
             price = pricing['structuredStayDisplayPrice']['primaryLine'][price_key]
+        
+        amount_match = ''.join(filter(str.isdigit, price) )
 
-        amount_match = int ( ''.join(filter(str.isdigit, price) ) )
-
-        if not amount_match:
-            raise ValueError('No amount match found for price: %s' % price)
-
-        return int(amount_match)
+        if amount_match =='':
+            #raise ValueError('No amount match found for price: %s' % price)
+            return None
+        else:
+            return int(amount_match)
 
     @staticmethod
     def __html_to_text(html: str) -> str:

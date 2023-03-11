@@ -112,18 +112,18 @@ Global Options:
         """Create scraper of given type using given parameters."""
         api_key = os.getenv('AIRBNB_API_KEY')
         proxy = os.getenv('PROXY', None)
-        ignore_cert = os.getenv('IGNORE_CERT', False)
-        if ignore_cert != False:
-            ignore_cert = True
+        ca_cert = os.getenv('CA_CERT', True)
+        #if ignore_cert != False:
+        #    ignore_cert = True
         throttle = int(os.getenv('THROTTLE', 2))
         if scraper_type == 'search':
-            explore = Explore(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
-            pdp = Pdp(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
-            reviews = Reviews(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
-            return AirbnbSearchScraper(explore, pdp, reviews, persistence, self.__logger)
+            explore = Explore(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            pdp = Pdp(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            reviews = Reviews(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            return AirbnbSearchScraper(explore, pdp, reviews, persistence,currency, self.__logger)
         elif scraper_type == 'calendar':
-            pricing = Pricing(api_key, currency, proxy, ignore_cert, throttle, self.__logger)
-            calendar = Calendar(api_key, currency, proxy, ignore_cert, throttle, self.__logger, pricing)
+            pricing = Pricing(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            calendar = Calendar(api_key, currency, proxy, ca_cert, throttle, self.__logger, pricing)
             return AirbnbCalendarScraper(calendar, persistence, self.__logger)
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)

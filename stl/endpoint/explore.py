@@ -16,7 +16,7 @@ class Explore(BaseEndpoint):
                 'request': {
                     'metadataOnly':          False,
                     'version':               '1.7.9',
-                    'itemsPerGrid':          200,
+                    'itemsPerGrid':          20,
                     'tabId':                 'home_tab',
                     'refinementPaths':       ['/homes'],
                     'source':                'structured_search_input_header',
@@ -52,7 +52,7 @@ class Explore(BaseEndpoint):
 
     def search(self, url: str):
         data = self._api_request(url)
-        print(data['data']['dora']['exploreV3']['metadata']['paginationMetadata'])
+        #print(data['data']['dora']['exploreV3']['metadata']['paginationMetadata'])
         pagination = data['data']['dora']['exploreV3']['metadata']['paginationMetadata']
 
         return data, pagination

@@ -17,13 +17,21 @@ from stl.persistence import PersistenceInterface
 def xstr(s):
     return '' if s is None else str(s)
 
+def sign_currency(currency):
+    if currency=='EUR':
+        res='€'
+    elif currency=='USD':
+        res='$'
+    else:
+        res=currency
+    return res
 class AirbnbScraperInterface:
     def run(self, *args, **kwargs):
         raise NotImplementedError()
 
 
 class AirbnbSearchScraper(AirbnbScraperInterface):
-    def __init__(self, explore: Explore, pdp: Pdp, reviews: Reviews, persistence: PersistenceInterface, logger: Logger):
+    def __init__(self, explore: Explore, pdp: Pdp, reviews: Reviews, persistence: PersistenceInterface,currency: str,logger: Logger):
         self.__logger = logger
         self.__explore = explore
         self.__geography = {}
@@ -31,6 +39,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         self.__pdp = pdp
         self.__persistence = persistence
         self.__reviews = reviews
+        self.__currency = currency
 
     def run(self, query: str, params: dict):
         listings = []
@@ -59,7 +68,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                     msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
                         '#' + str(n_listings),
                         xstr(listing['city']),
-                        '${} {}'.format(xstr(listing['price_rate']), xstr(listing['price_rate_type'])),
+                        '{}{} {}'.format(sign_currency(self.__currency), xstr(listing['price_rate']), xstr(listing['price_rate_type'])),
                         xstr(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
                         '{:.2f}ba'.format(listing['bathrooms'] if listing['bathrooms'] else 0),
                         xstr(listing['room_and_property_type']),

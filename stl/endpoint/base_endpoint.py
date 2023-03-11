@@ -17,7 +17,7 @@ class BaseEndpoint(ABC):
     API_PATH = None
     SOURCE = 'airbnb'
 
-    def __init__(self, api_key: str, currency: str, proxy: str, ignore_cert: bool, throttle:int, logger: Logger, locale: str = 'en'):
+    def __init__(self, api_key: str, currency: str, proxy: str, ca_cert: str, throttle:int, logger: Logger, locale: str = 'en'):
         self._api_key = api_key
         self._currency = currency
         self._locale = locale
@@ -25,7 +25,7 @@ class BaseEndpoint(ABC):
         self._proxy = {'http': proxy,
                       'https': proxy}
         self._throttle=throttle
-        self._verify_cert = not ignore_cert
+        self._ca_cert = ca_cert
 
     @staticmethod
     def build_airbnb_url(path: str, query=None):
@@ -43,13 +43,17 @@ class BaseEndpoint(ABC):
         while attempts < max_attempts:
             sleep(randint(0,self._throttle))  # do a little throttling
             attempts += 1
-            response = requests.request(method, url, headers=headers, data=data, proxies=self._proxy, verify=self._verify_cert)
-            response_json = response.json()
-            errors = response_json.get('errors')
-            if not errors:
-                return response_json
-
-            self.__handle_api_error(url, errors)
+            response = requests.request(method, url, headers=headers, data=data, proxies=self._proxy, verify=self._ca_cert)
+            if response.text=='Proxy server error':
+                errors='Proxy server error'
+                #self.__handle_api_error(url, errors)
+            else:
+                response_json = response.json()
+                errors = response_json.get('errors')
+                if not errors:
+                    return response_json
+                else:
+                    self.__handle_api_error(url, errors)
 
         raise ApiException(['Could not complete API {} request to "{}"'.format(method, url)])
 
