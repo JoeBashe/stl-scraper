@@ -112,9 +112,8 @@ Global Options:
         """Create scraper of given type using given parameters."""
         api_key = os.getenv('AIRBNB_API_KEY')
         proxy = os.getenv('PROXY', None)
-        ca_cert = os.getenv('CA_CERT', True)
-        #if ignore_cert != False:
-        #    ignore_cert = True
+        ca_cert = os.getenv('CA_CERT', None)
+
         throttle = int(os.getenv('THROTTLE', 2))
         if scraper_type == 'search':
             explore = Explore(api_key, currency, proxy, ca_cert, throttle, self.__logger)

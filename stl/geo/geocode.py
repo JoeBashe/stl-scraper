@@ -4,6 +4,10 @@ from geopy.geocoders import Nominatim, GoogleV3
 from geopy.extra.rate_limiter import RateLimiter
 from random import randint
 
+import ssl
+import geopy.geocoders
+
+
 
 class Geocoder:
 
@@ -15,13 +19,12 @@ class Geocoder:
         proxy = {'http': proxy,
                       'https': proxy}
 
-        import certifi
-        import ssl
-        import geopy.geocoders
-
-        ctx = ssl.create_default_context(cafile=ca_cert)
-        geopy.geocoders.options.default_ssl_context = ctx
-        self.__geolocator = Nominatim(user_agent=user_agent,proxies=proxy)
+        if ca_cert:
+            ctx = ssl.create_default_context(cafile=ca_cert)
+            geopy.geocoders.options.default_ssl_context = ctx
+            geopy.geocoders.options.default_timeout = 2
+            
+        self.__geolocator = Nominatim(user_agent=('test'),proxies=proxy)
         self.__osm_reverse_geo = RateLimiter(self.__geolocator.reverse, min_delay_seconds=1)
 
     def is_city(self, name: str, country: str):
