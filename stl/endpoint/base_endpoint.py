@@ -44,16 +44,15 @@ class BaseEndpoint(ABC):
             sleep(randint(0,self._throttle))  # do a little throttling
             attempts += 1
             response = requests.request(method, url, headers=headers, data=data, proxies=self._proxy, verify=self._ca_cert)
-            if response.text=='Proxy server error':
-                errors='Proxy server error'
-                #self.__handle_api_error(url, errors)
-            else:
+            try:
                 response_json = response.json()
                 errors = response_json.get('errors')
                 if not errors:
                     return response_json
                 else:
                     self.__handle_api_error(url, errors)
+            except:
+                print(f'ERROR ap_request -- {response.text}')
 
         raise ApiException(['Could not complete API {} request to "{}"'.format(method, url)])
 

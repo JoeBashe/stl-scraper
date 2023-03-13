@@ -14,7 +14,7 @@ class Geocoder:
     def __init__(self,proxy,ca_cert) -> None:
         gmaps_api_key = os.environ.get('GMAPS_API_KEY')
         self.__gmaps = GoogleV3(api_key=gmaps_api_key) if gmaps_api_key else None
-        user_agent = 'stl-scraper-{}'.format(randint(1, 10000))
+        user_agent = 'stl-scraper-test-{}'.format(randint(1, 100000))
 
         proxy = {'http': proxy,
                       'https': proxy}
@@ -24,7 +24,7 @@ class Geocoder:
             geopy.geocoders.options.default_ssl_context = ctx
             geopy.geocoders.options.default_timeout = 2
             
-        self.__geolocator = Nominatim(user_agent=('test'),proxies=proxy)
+        self.__geolocator = Nominatim(user_agent=(user_agent),proxies=proxy)
         self.__osm_reverse_geo = RateLimiter(self.__geolocator.reverse, min_delay_seconds=1)
 
     def is_city(self, name: str, country: str):

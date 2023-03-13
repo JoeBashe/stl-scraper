@@ -81,22 +81,18 @@ Global Options:
             scraper.run(source, self.__args.get('--updated'))
 
         elif self.__args.get('data'):
-            ignore_cert = os.getenv('IGNORE_CERT',False)
-            if ignore_cert != False and ignore_cert!=0:
-                ignore_cert = True
+            ca_cert = os.getenv('CA_CERT', None)
             throttle = int(os.getenv('THROTTLE', 2))
-            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, throttle, self.__logger)
+            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ca_cert, throttle, self.__logger)
             print(json.dumps(pdp.get_raw_listing(self.__args.get('<listingId>'))))
 
         elif self.__args.get('pricing'):
             listing_id = self.__args.get('<listingId>')
             checkin = self.__args.get('--checkin')
             checkout = self.__args.get('--checkout')
-            ignore_cert = os.getenv('IGNORE_CERT', False)
-            if ignore_cert != False:
-                ignore_cert = True
+            ca_cert = os.getenv('CA_CERT', None)
             throttle = int(os.getenv('THROTTLE', 2))
-            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ignore_cert, throttle, self.__logger)
+            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ca_cert, throttle, self.__logger)
             total = pricing.get_pricing(checkin, checkout, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
 
