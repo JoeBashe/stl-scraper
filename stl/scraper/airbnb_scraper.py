@@ -14,14 +14,24 @@ from stl.exception.api import ForbiddenException
 from stl.persistence.elastic import Elastic
 from stl.persistence import PersistenceInterface
 
+def xstr(s):
+    return '' if s is None else str(s)
 
+def sign_currency(currency):
+    if currency=='EUR':
+        res='€'
+    elif currency=='USD':
+        res='$'
+    else:
+        res=currency
+    return res
 class AirbnbScraperInterface:
     def run(self, *args, **kwargs):
         raise NotImplementedError()
 
 
 class AirbnbSearchScraper(AirbnbScraperInterface):
-    def __init__(self, explore: Explore, pdp: Pdp, reviews: Reviews, persistence: PersistenceInterface, logger: Logger):
+    def __init__(self, explore: Explore, pdp: Pdp, reviews: Reviews, persistence: PersistenceInterface,currency: str,logger: Logger):
         self.__logger = logger
         self.__explore = explore
         self.__geography = {}
@@ -29,6 +39,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         self.__pdp = pdp
         self.__persistence = persistence
         self.__reviews = reviews
+        self.__currency = currency
 
     def run(self, query: str, params: dict):
         listings = []
@@ -42,6 +53,7 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
         page = 1
         data_cache = {}
         while pagination.get('hasNextPage'):
+            listings_continue =[]
             self.__logger.info('Searching page {} for {}'.format(page, query))
             listing_ids = self.__pdp.collect_listings_from_sections(data, self.__geography, data_cache)
             for listing_id in listing_ids:  # request each property page
@@ -52,20 +64,23 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
                 n_listings += 1
                 reviews = self.__reviews.get_reviews(listing_id)
                 listing = self.__pdp.get_listing(listing_id, data_cache, self.__geography, reviews)
-
-                msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
-                    '#' + str(n_listings),
-                    listing['city'],
-                    '${} {}'.format(listing['price_rate'], listing['price_rate_type']),
-                    str(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
-                    '{:.2f}ba'.format(listing['bathrooms']),
-                    listing['room_and_property_type'],
-                    '- {} -'.format(listing['neighborhood']) if listing['neighborhood'] else '',
-                    listing['name'],
-                    listing['url']
-                )
-                self.__logger.info(msg)
-                listings.append(listing)
+                try:
+                    msg = '{:>4} {:<12} {:>12} {:<5}{:<9}{} {:<1} {} ({})'.format(
+                        '#' + str(n_listings),
+                        xstr(listing['city']),
+                        '{}{} {}'.format(sign_currency(self.__currency), xstr(listing['price_rate']), xstr(listing['price_rate_type'])),
+                        xstr(listing['bedrooms']) + 'br' if listing['bedrooms'] else '0br',
+                        '{:.2f}ba'.format(listing['bathrooms'] if listing['bathrooms'] else 0),
+                        xstr(listing['room_and_property_type']),
+                        '- {} -'.format(xstr(listing['neighborhood'])),
+                        xstr(listing['name']),
+                        xstr(listing['url'])
+                    )
+                    self.__logger.info(msg)
+                    listings.append(listing)
+                    listings_continue.append(listing)
+                except:
+                    self.__logger.error('ERROR_TO_HANDLE -- '+str(listing['id']))
 
             self.__add_search_params(params, url)
             items_offset = pagination['itemsOffset']
@@ -73,8 +88,9 @@ class AirbnbSearchScraper(AirbnbScraperInterface):
             url = self.__explore.get_url(query, params)
             data, pagination = self.__explore.search(url)
             page += 1
+            self.__persistence.save(query, listings_continue,continuous=True)
 
-        self.__persistence.save(query, listings)
+        #self.__persistence.save(query, listings)
         self.__logger.info('Got data for {} listings.'.format(n_listings))
 
     @staticmethod

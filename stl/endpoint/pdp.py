@@ -70,9 +70,9 @@ class Pdp(BaseEndpoint):
 
     SECTION_NAMES = ['amenities', 'description', 'host_profile', 'location', 'policies']
 
-    def __init__(self, api_key: str, currency: str, logger: Logger):
-        super().__init__(api_key, currency, logger)
-        self.__geocoder = Geocoder()
+    def __init__(self, api_key: str, currency: str,  proxy: str, ca_cert: str, throttle: bool, logger: Logger):
+        super().__init__(api_key, currency, proxy, ca_cert,throttle, logger)
+        self.__geocoder = Geocoder(proxy,ca_cert)
         self.__regex_amenity_id = re.compile(r'^([a-z0-9]+_)+([0-9]+)_')
 
     @staticmethod
@@ -359,8 +359,9 @@ class Pdp(BaseEndpoint):
             if reverse_geo_address['city'] in [search_city, city, localized_city] or self.__geocoder.is_city(reverse_geo_address['city'], reverse_geo_address['country']):
                 return reverse_geo_address['city'], localized_neighborhood
 
-        if self.__geocoder.is_city((city or localized_city), reverse_geo_address['country']):
-            return city or localized_city, neighborhood
+        if reverse_geo_address :
+            if self.__geocoder.is_city((city or localized_city), reverse_geo_address['country']):
+                return city or localized_city, neighborhood
 
         return city, neighborhood
 
@@ -391,8 +392,8 @@ class Pdp(BaseEndpoint):
     def __get_price_rate(pricing) -> int | None:
         if pricing:
             price_key = Pdp.__get_price_key(pricing)
-            return int(pricing['structuredStayDisplayPrice']['primaryLine'][price_key].lstrip('$').replace(',', ''))
-
+            res=pricing['structuredStayDisplayPrice']['primaryLine'][price_key].replace('\xa0',' ')
+            return int ( ''.join(filter(str.isdigit, res) ) )
         return None
 
     @staticmethod
@@ -406,16 +407,17 @@ class Pdp(BaseEndpoint):
     def __get_total_price(pricing) -> int | None:
         if pricing['structuredStayDisplayPrice']['secondaryLine']:
             price = pricing['structuredStayDisplayPrice']['secondaryLine']['price']
-            amount_match = re.match(r'\$([\w,]+) total', price)
         else:
             price_key = Pdp.__get_price_key(pricing)
             price = pricing['structuredStayDisplayPrice']['primaryLine'][price_key]
-            amount_match = re.match(r'\$([\w,]+)', price)
+        
+        amount_match = ''.join(filter(str.isdigit, price) )
 
-        if not amount_match:
-            raise ValueError('No amount match found for price: %s' % price)
-
-        return int(amount_match[1].replace(',', ''))
+        if amount_match =='':
+            #raise ValueError('No amount match found for price: %s' % price)
+            return None
+        else:
+            return int(amount_match)
 
     @staticmethod
     def __html_to_text(html: str) -> str:

@@ -4,14 +4,27 @@ from geopy.geocoders import Nominatim, GoogleV3
 from geopy.extra.rate_limiter import RateLimiter
 from random import randint
 
+import ssl
+import geopy.geocoders
+
+
 
 class Geocoder:
 
-    def __init__(self) -> None:
+    def __init__(self,proxy,ca_cert) -> None:
         gmaps_api_key = os.environ.get('GMAPS_API_KEY')
         self.__gmaps = GoogleV3(api_key=gmaps_api_key) if gmaps_api_key else None
-        user_agent = 'stl-scraper-{}'.format(randint(1, 10000))
-        self.__geolocator = Nominatim(user_agent=user_agent)
+        user_agent = 'stl-scraper-test-{}'.format(randint(1, 100000))
+
+        proxy = {'http': proxy,
+                      'https': proxy}
+
+        if ca_cert:
+            ctx = ssl.create_default_context(cafile=ca_cert)
+            geopy.geocoders.options.default_ssl_context = ctx
+            geopy.geocoders.options.default_timeout = 2
+            
+        self.__geolocator = Nominatim(user_agent=(user_agent),proxies=proxy)
         self.__osm_reverse_geo = RateLimiter(self.__geolocator.reverse, min_delay_seconds=1)
 
     def is_city(self, name: str, country: str):
@@ -27,20 +40,26 @@ class Geocoder:
     def reverse(self, lat: float, lon: float) -> dict | bool:
         """Tries OSM reverse geocoder (Nomatim) first. If it fails, tries Google Maps reverse geocoder (untested)."""
         # Try OSM
-        address = self.__osm_reverse_geo((lat, lon), language='en').raw['address']
-        if 'city' in address:
-            return address
-        if 'town' in address:
-            address['city'] = address['town']
-            return address
-        if 'state' in address:
-            address['city'] = address['state']
-            return address
+        try:
+            address = self.__osm_reverse_geo((lat, lon), language='en').raw['address']
+            if 'city' in address:
+                return address
+            if 'town' in address:
+                address['city'] = address['town']
+                return address
+            if 'state' in address:
+                address['city'] = address['state']
+                return address
+        except:
+            pass
 
         # Else try google maps
         if self.__gmaps:
-            address = self.__gmaps.reverse((lat, lon), language='en')
-            if 'city' in address:
-                return address
+            try:
+                address = self.__gmaps.reverse((lat, lon), language='en')
+                if 'city' in address:
+                    return address
+            except:
+                pass
 
         return False

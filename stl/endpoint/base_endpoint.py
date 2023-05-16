@@ -9,16 +9,23 @@ from urllib.parse import urlunparse, urlencode
 
 from stl.exception.api import ApiException, ForbiddenException
 
+import urllib3
+urllib3.disable_warnings()
+
 
 class BaseEndpoint(ABC):
     API_PATH = None
     SOURCE = 'airbnb'
 
-    def __init__(self, api_key: str, currency: str, logger: Logger, locale: str = 'en'):
+    def __init__(self, api_key: str, currency: str, proxy: str, ca_cert: str, throttle:int, logger: Logger, locale: str = 'en'):
         self._api_key = api_key
         self._currency = currency
         self._locale = locale
         self._logger = logger
+        self._proxy = {'http': proxy,
+                      'https': proxy}
+        self._throttle=throttle
+        self._ca_cert = ca_cert
 
     @staticmethod
     def build_airbnb_url(path: str, query=None):
@@ -30,20 +37,22 @@ class BaseEndpoint(ABC):
     def _api_request(self, url: str, method: str = 'GET', data=None) -> dict:
         if data is None:
             data = {}
-
         attempts = 0
         headers = {'x-airbnb-api-key': self._api_key}
-        max_attempts = 3
+        max_attempts = 5
         while attempts < max_attempts:
-            sleep(randint(0, 2))  # do a little throttling
+            sleep(randint(0,self._throttle))  # do a little throttling
             attempts += 1
-            response = requests.request(method, url, headers=headers, data=data)
-            response_json = response.json()
-            errors = response_json.get('errors')
-            if not errors:
-                return response_json
-
-            self.__handle_api_error(url, errors)
+            response = requests.request(method, url, headers=headers, data=data, proxies=self._proxy, verify=self._ca_cert)
+            try:
+                response_json = response.json()
+                errors = response_json.get('errors')
+                if not errors:
+                    return response_json
+                else:
+                    self.__handle_api_error(url, errors)
+            except:
+                print(f'ERROR ap_request -- {response.text}')
 
         raise ApiException(['Could not complete API {} request to "{}"'.format(method, url)])
 
