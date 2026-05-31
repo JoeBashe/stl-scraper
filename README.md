@@ -7,7 +7,7 @@ results to a CSV file or Elasticsearch.
 
 ## Notice
 
-Airbnb's API is subject to change at any moment, which would break this scraper. They've already changed it several times in the past. I have not personally used this scraper in several months, and therefore it may need to be updated to work with the latest version of the Airbnb website.
+This project is maintained on a best-effort basis; API changes may require updates.
 
 ## Usage
 
