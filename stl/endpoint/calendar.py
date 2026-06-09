@@ -133,8 +133,8 @@ class Calendar(BaseEndpoint):
     API_PATH = '/api/v3/PdpAvailabilityCalendar'
     N_MONTHS = 12  # number of months of data to return; 12 months == 1 year
 
-    def __init__(self, api_key: str, currency: str, logger: Logger, pricing: Pricing):
-        super().__init__(api_key, currency, logger)
+    def __init__(self, api_key: str, currency: str,  proxy: str, ca_cert: str, throttle: int, logger: Logger, pricing: Pricing):
+        super().__init__(api_key, currency, proxy, ca_cert, throttle, logger)
         self.__pricing = pricing
         self.__today = datetime.today()
 

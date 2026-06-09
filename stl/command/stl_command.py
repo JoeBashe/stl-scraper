@@ -81,14 +81,18 @@ Global Options:
             scraper.run(source, self.__args.get('--updated'))
 
         elif self.__args.get('data'):
-            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, self.__logger)
+            ca_cert = os.getenv('CA_CERT', None)
+            throttle = int(os.getenv('THROTTLE', 2))
+            pdp = Pdp(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ca_cert, throttle, self.__logger)
             print(json.dumps(pdp.get_raw_listing(self.__args.get('<listingId>'))))
 
         elif self.__args.get('pricing'):
             listing_id = self.__args.get('<listingId>')
             checkin = self.__args.get('--checkin')
             checkout = self.__args.get('--checkout')
-            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, self.__logger)
+            ca_cert = os.getenv('CA_CERT', None)
+            throttle = int(os.getenv('THROTTLE', 2))
+            pricing = Pricing(os.getenv('AIRBNB_API_KEY'), currency, os.getenv('PROXY', None), ca_cert, throttle, self.__logger)
             total = pricing.get_pricing(checkin, checkout, listing_id)
             print('https://www.airbnb.com/rooms/{} - {} to {}: {}'.format(listing_id, checkin, checkout, total))
 
@@ -103,14 +107,18 @@ Global Options:
     ) -> AirbnbScraperInterface:
         """Create scraper of given type using given parameters."""
         api_key = os.getenv('AIRBNB_API_KEY')
+        proxy = os.getenv('PROXY', None)
+        ca_cert = os.getenv('CA_CERT', None)
+
+        throttle = int(os.getenv('THROTTLE', 2))
         if scraper_type == 'search':
-            explore = Explore(api_key, currency, self.__logger)
-            pdp = Pdp(api_key, currency, self.__logger)
-            reviews = Reviews(api_key, currency, self.__logger)
-            return AirbnbSearchScraper(explore, pdp, reviews, persistence, self.__logger)
+            explore = Explore(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            pdp = Pdp(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            reviews = Reviews(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            return AirbnbSearchScraper(explore, pdp, reviews, persistence,currency, self.__logger)
         elif scraper_type == 'calendar':
-            pricing = Pricing(api_key, currency, self.__logger)
-            calendar = Calendar(api_key, currency, self.__logger, pricing)
+            pricing = Pricing(api_key, currency, proxy, ca_cert, throttle, self.__logger)
+            calendar = Calendar(api_key, currency, proxy, ca_cert, throttle, self.__logger, pricing)
             return AirbnbCalendarScraper(calendar, persistence, self.__logger)
         else:
             raise RuntimeError('Unknown scraper type: %s' % scraper_type)

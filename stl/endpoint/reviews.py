@@ -34,13 +34,16 @@ class Reviews(BaseEndpoint):
         else:
             n_reviews_total = 0
 
-        reviews = [{
-            'comments':   r['comments'],
-            'created_at': r['createdAt'],
-            'language':   r['language'],
-            'rating':     r['rating'],
-            'response':   r['response'],
-        } for r in pdp_reviews['reviews']]
+        if pdp_reviews!=None:
+            reviews = [{
+                'comments':   r['comments'],
+                'created_at': r['createdAt'],
+                'language':   r['language'],
+                'rating':     r['rating'],
+                'response':   r['response'],
+            } for r in pdp_reviews['reviews']]
+        else:
+            reviews=[]
 
         return reviews, n_reviews_total
 
